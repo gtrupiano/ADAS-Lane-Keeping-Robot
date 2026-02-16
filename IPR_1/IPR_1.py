@@ -8,59 +8,119 @@ import cv2
 import numpy as np
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-
+from moviepy.editor import VideoFileClip
+import os
+from pathlib import Path
 
 def main():
-    input_image = mpimg.imread('Test_Images/solidWhiteRight.jpg')
+    #process_image("solidWhiteRight.jpg")
+    process_video("solidWhiteRight.mp4")
+    process_video("solidYellowLeft.mp4")
+    process_video("challenge.mp4")
 
-    gray_image = cv2.cvtColor(input_image, cv2.COLOR_RGB2GRAY)
+
+def process_image(image_name):
+    image_path = (f"./Test_Images/{image_name}")
+    input_image = mpimg.imread(image_path)
+
+    result = detect_lanes(input_image)
+
+    plt.imshow(result)
+    plt.show()
+
+
+def process_video(video_name):
+    input_path = (f"./Test_Videos/{video_name}")
+
+    clip = VideoFileClip(input_path, audio=False).subclip(0, 5)
+
+    # moviepy will call this once per frame (frame is an RGB numpy array)
+    output_clip = clip.fl_image(detect_lanes)
+
+    # Create output folder
+    output_folder = r"Test_Video_Outputs_Mine"
+
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+
+    # Build output path using input 
+    output_path = f"./Test_Video_Outputs_Mine/Output_{video_name}"
+
+    output_clip.write_videofile(
+        filename=output_path,
+        audio=False,
+        codec="libx264",
+        fps=clip.fps
+    )
+    
+    clip.close()
+    output_clip.close()
+
+
+def detect_lanes(input_image):
+    # MoviePy frames can sometimes be non-contiguous or float; normalize for OpenCV.
+    input_image = np.ascontiguousarray(input_image)
+
+    if input_image.dtype != np.uint8:
+        input_image = (input_image * 255).clip(0, 255).astype(np.uint8)
+        
+    gray_image = cv2.cvtColor(
+        src=input_image,
+        code=cv2.COLOR_RGB2GRAY
+        )
     
     # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. 
     # The larger the kernel size, the more blurred the image will be.
     KERNAL_SIZE = 5
     SIGMA_BLUR_CONTROL = 0
-    filtered_image = cv2.GaussianBlur(gray_image, (KERNAL_SIZE, KERNAL_SIZE), SIGMA_BLUR_CONTROL)
+    filtered_image = cv2.GaussianBlur(
+        src=gray_image, 
+        ksize=(KERNAL_SIZE, KERNAL_SIZE),
+        sigmaX=SIGMA_BLUR_CONTROL,
+        sigmaY=SIGMA_BLUR_CONTROL
+        )
 
     LOW_THRESHOLD = 50
     HIGH_THRESHOLD = 150
-    image_edges = cv2.Canny(filtered_image, LOW_THRESHOLD, HIGH_THRESHOLD)
+    image_edges = cv2.Canny(
+        image=filtered_image, 
+        threshold1=LOW_THRESHOLD,
+        threshold2=HIGH_THRESHOLD
+        )
 
     # Edges that are within the ROI
     masked_edges = apply_ROI(image_edges)
 
+    # # Connect dashed lane markings by filling small gaps in edges
+    # kernel = np.ones((5, 5), np.uint8)
+    # masked_edges = cv2.morphologyEx(
+    #     src=masked_edges,
+    #     op=cv2.MORPH_CLOSE,
+    #     kernel=kernel
+    # )
 
+    # Fetches straight line segments from edges of image
+    hough_lines = hough_transform(masked_edges)
 
-
-
-
-    lines = hough_transform(input_image, masked_edges)
-
-    # Create a blank RGB image to draw the Hough line segments
-    h = masked_edges.shape[0]
-    w = masked_edges.shape[1]
-    line_image = np.zeros((h, w, 3), dtype=np.uint8)
-
-    # Draw each detected line segment (if any)
-    if lines is not None:
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            cv2.line(line_image, (x1, y1), (x2, y2), (255, 0, 0), 5)
-
-    # Overlay the line image on the original image
-    result = cv2.addWeighted(input_image, 0.8, line_image, 1.0, 0.0)
-
-    plt.imshow(result, cmap='gray')
-    plt.show()
+    # Draw lines and overly onto input image
+    result = draw_lines_on_image(
+        image=input_image,
+        edges_image=masked_edges,
+        lines=hough_lines
+        )
+    
+    return result
 
 
 def apply_ROI(image_edges):
-    """
+    r"""
     (x1,y1) ------- (x4,y4)
      \               /
       \             /
        (x2,y2) (x3,y3)
     """
 
+    # Dimensions of image
     h = image_edges.shape[0]
     w = image_edges.shape[1]
 
@@ -77,7 +137,7 @@ def apply_ROI(image_edges):
     x4 = w
     y4 = h
 
-    # Define the vertices of the polygon that will be used to mask the region of interest (ROI).
+    # Define the vertices of the polygon that will be used to mask the ROI
     vertices = np.array([[
         (x1, y1),
         (x2, y2),
@@ -86,36 +146,105 @@ def apply_ROI(image_edges):
     ]], dtype=np.int32)
 
     # Create a black image of the same size as the edge-detected image
-    roi_image = np.zeros_like(image_edges)
+    roi = np.zeros_like(image_edges)
 
     # Fill the region inside the vertices with white (255).
-    cv2.fillPoly(roi_image, vertices, 255)
+    cv2.fillPoly(
+        img=roi, 
+        pts=vertices, 
+        color=255
+        )
 
-    # Perform a bitwise AND operation between the edge-detected image and the mask to keep only the edges that are within the ROI.
-    masked_edges = cv2.bitwise_and(image_edges, roi_image)
+    # Perform a bitwise AND operation between the edge-detected image and the
+    # mask to keep only the edges that are within the ROI.
+    masked_edges = cv2.bitwise_and(
+        src1=image_edges,
+        src2=roi
+        )
     
     return masked_edges
 
 
-def hough_transform(input_image, masked_edges):
-    # Hough transform parameters
-    rho = 2 
-    theta = np.pi / 180
-    threshold = 15
-    min_line_len = 40
-    max_line_gap = 20
+###############################################################################
+# Function Name: hough_transform()
+# Description: Applies the Probabilistic Hough Transform to detect straight line segments
+#              from the edge image.
+#
+#              This calculation determines where a line would need to be located in order
+#              to pass through that edge pixel at the given angle.
+#              
+#              A line is defined by:
+#              x*cos(theta) + y*sin(theta) = rho
+#              
+#              Theta: The orientation (angle) of the line
+#              Rho: Determines the position of the line by using the shortest perpendicular distance from the image origin to that line.
+#              
+#              For each edge pixel, all theta (0-180) are input into the line equation one at a time. With each theta, a rho is computed giving the pair (theta,rho).
+#              The pair (theta,rho) defines ONE infinite straight line.
+#
+#              All N pairs which give N lines (determined by the theta interval, every 1, 5, or 10 degrees). 
+# 
+#              An array exists which keeps track of each (theta,rho). After all edge pixels are completed,
+#              the (theta,rho) with the most votes are the ones that indicate a line exists.
+#
+#              Then OpenCV converts those detected lines into line segments:
+#              return (x1, y1, x2, y2)
+###############################################################################
 
-    lines = cv2.HoughLinesP(
-        masked_edges,
-        rho,
-        theta,
-        threshold,
-        np.array([]),
+def hough_transform(masked_edges):
+    # Hough transform parameters
+    rho = 1 # Distance resolution of candidate lines (accumulator rows)
+    theta = np.pi / 180 # Defines interval of how much to increment theta in line calculation.
+    threshold = 30 # Minimum number of supporting edge pixels required before a line is considered valid.
+    min_line_len = 50 # Minimum length (in pixels) required for a detected line segment.
+    max_line_gap = 200 # Maximum allowed gap between line segments that can be connected into one continuous line.
+
+    # Perform Probabilistic Hough Transform
+    # Returns detected line segments as endpoints (x1, y1, x2, y2)
+    hough_lines = cv2.HoughLinesP(
+        image=masked_edges,
+        rho=rho,
+        theta=theta,
+        threshold=threshold,
         minLineLength=min_line_len,
         maxLineGap=max_line_gap
     )
 
-    return lines
+    return hough_lines
+
+
+def draw_lines_on_image(image, edges_image, lines):
+    # Create a blank RGB image to draw the Hough line segments
+    h = edges_image.shape[0]
+    w = edges_image.shape[1]
+    line_image = np.zeros(
+        shape=(h, w, 3), 
+        dtype=np.uint8
+        )
+
+    # Draw each detected line segment (if any)
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            cv2.line(
+                img=line_image,
+                pt1=(x1, y1),
+                pt2=(x2, y2),
+                color=(255, 0, 0),
+                thickness=5
+                )
+
+    # Overlay the line image on the original image
+    result = cv2.addWeighted(
+        src1=image, 
+        alpha=0.8, 
+        src2=line_image, 
+        beta=1.0, 
+        gamma=0.0
+        )
+    
+    return result
+
 
 if __name__ == "__main__":
     main()
