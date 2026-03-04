@@ -12,12 +12,23 @@ from moviepy.editor import VideoFileClip
 import os
 from pathlib import Path
 
+last_lanes = None
+averaged_left = None
+averaged_right = None
+
+ALPHA = 0.1
+
 def main():
     #process_image("solidWhiteRight.jpg")
     process_video("solidWhiteRight.mp4")
     process_video("solidYellowLeft.mp4")
     process_video("challenge.mp4")
 
+
+###############################################################################
+# Function Name: process_image
+# Description: 
+###############################################################################
 
 def process_image(image_name):
     image_path = (f"./Test_Images/{image_name}")
@@ -28,6 +39,11 @@ def process_image(image_name):
     plt.imshow(result)
     plt.show()
 
+
+###############################################################################
+# Function Name: process_video
+# Description: 
+###############################################################################
 
 def process_video(video_name):
     input_path = (f"./Test_Videos/{video_name}")
@@ -57,60 +73,112 @@ def process_video(video_name):
     output_clip.close()
 
 
-def detect_lanes(input_image):
-    # MoviePy frames can sometimes be non-contiguous or float; normalize for OpenCV.
-    input_image = np.ascontiguousarray(input_image)
+###############################################################################
+# Function Name: detect_lanes
+# Description: 
+###############################################################################
 
-    if input_image.dtype != np.uint8:
-        input_image = (input_image * 255).clip(0, 255).astype(np.uint8)
-        
-    gray_image = cv2.cvtColor(
-        src=input_image,
+def detect_lanes(input_frame):
+    # Convert to grayscale
+    gray_frame = cv2.cvtColor(
+        src=input_frame,
         code=cv2.COLOR_RGB2GRAY
         )
     
     # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. 
     # The larger the kernel size, the more blurred the image will be.
-    KERNAL_SIZE = 5
+    KERNAL_SIZE = 7
     SIGMA_BLUR_CONTROL = 0
-    filtered_image = cv2.GaussianBlur(
-        src=gray_image, 
+    filtered_frame = cv2.GaussianBlur(
+        src=gray_frame, 
         ksize=(KERNAL_SIZE, KERNAL_SIZE),
         sigmaX=SIGMA_BLUR_CONTROL,
         sigmaY=SIGMA_BLUR_CONTROL
         )
 
+    # Canny Edge Detection
     LOW_THRESHOLD = 50
     HIGH_THRESHOLD = 150
-    image_edges = cv2.Canny(
-        image=filtered_image, 
+    frame_edges = cv2.Canny(
+        image=filtered_frame, 
         threshold1=LOW_THRESHOLD,
         threshold2=HIGH_THRESHOLD
         )
 
     # Edges that are within the ROI
-    masked_edges = apply_ROI(image_edges)
+    masked_edges = apply_ROI(frame_edges)
 
     # # Connect dashed lane markings by filling small gaps in edges
-    # kernel = np.ones((5, 5), np.uint8)
+    # kernel = np.ones((3, 3), np.uint8)
     # masked_edges = cv2.morphologyEx(
     #     src=masked_edges,
     #     op=cv2.MORPH_CLOSE,
-    #     kernel=kernel
+    #     kernel=kernel,
+    #     iterations=2
     # )
 
     # Fetches straight line segments from edges of image
     hough_lines = hough_transform(masked_edges)
 
+    # Filter out lines that have non ideal slopes
+    filtered_lines = filter_lines(hough_lines, 0.5, 2.5, input_frame.shape[0])
+
+    # If this frame failed to detect lanes, reuse the last good lanes
+        # If this frame failed to detect lanes, reuse the last good lanes
+    global last_lanes
+    global averaged_left
+    global averaged_right
+
+    if filtered_lines is None:
+        filtered_lines = last_lanes
+    else:
+        last_lanes = filtered_lines
+
+    # Still nothing to draw
+    if filtered_lines is None:
+        return input_frame
+
+    # filtered_lines contains 1 or 2 tuples: (x1, y1, x2, y2)
+    # Convert to numpy arrays so we can do elementwise EMA math
+    if len(filtered_lines) >= 1:
+        current_left = np.array(filtered_lines[0], dtype=np.float32)
+
+        if averaged_left is None:
+            averaged_left = current_left
+        else:
+            averaged_left = (ALPHA * current_left) + ((1 - ALPHA) * averaged_left)
+
+    if len(filtered_lines) >= 2:
+        current_right = np.array(filtered_lines[1], dtype=np.float32)
+
+        if averaged_right is None:
+            averaged_right = current_right
+        else:
+            averaged_right = (ALPHA * current_right) + ((1 - ALPHA) * averaged_right)
+
+    averaged_lines = []
+
+    if averaged_left is not None:
+        averaged_lines.append(tuple(averaged_left.astype(int)))
+
+    if averaged_right is not None:
+        averaged_lines.append(tuple(averaged_right.astype(int)))
+
+
     # Draw lines and overly onto input image
-    result = draw_lines_on_image(
-        image=input_image,
-        edges_image=masked_edges,
-        lines=hough_lines
+    result = draw_lines_on_frame(
+        frame=input_frame,
+        edges_frame=masked_edges,
+        lines=averaged_lines
         )
     
     return result
 
+
+###############################################################################
+# Function Name: apply_ROI
+# Description: 
+###############################################################################
 
 def apply_ROI(image_edges):
     r"""
@@ -166,7 +234,7 @@ def apply_ROI(image_edges):
 
 
 ###############################################################################
-# Function Name: hough_transform()
+# Function Name: hough_transform
 # Description: Applies the Probabilistic Hough Transform to detect straight line segments
 #              from the edge image.
 #
@@ -195,9 +263,9 @@ def hough_transform(masked_edges):
     # Hough transform parameters
     rho = 1 # Distance resolution of candidate lines (accumulator rows)
     theta = np.pi / 180 # Defines interval of how much to increment theta in line calculation.
-    threshold = 30 # Minimum number of supporting edge pixels required before a line is considered valid.
-    min_line_len = 50 # Minimum length (in pixels) required for a detected line segment.
-    max_line_gap = 200 # Maximum allowed gap between line segments that can be connected into one continuous line.
+    threshold = 50 # Minimum number of supporting edge pixels required before a line is considered valid.
+    min_line_len = 100 # Minimum length (in pixels) required for a detected line segment.
+    max_line_gap = 40 # Maximum allowed gap between line segments that can be connected into one continuous line.
 
     # Perform Probabilistic Hough Transform
     # Returns detected line segments as endpoints (x1, y1, x2, y2)
@@ -213,10 +281,95 @@ def hough_transform(masked_edges):
     return hough_lines
 
 
-def draw_lines_on_image(image, edges_image, lines):
+###############################################################################
+# Function Name: filter_lines
+# Description: 
+###############################################################################
+
+def filter_lines(lines, min_slope, max_slope, frame_height):
+    # No lines found from Hough transform
+    if lines is None:
+        return None
+    
+    left_lines_slope = []
+    left_lines_intercept = []
+
+    right_lines_slope = []
+    right_lines_intercept = []
+
+    lanes = []
+
+    # Fetching slopes of all lines and assigning them to left and right
+    # These aren't the final lanes, two lines will be created from the slopes
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+
+        # Calculate slope
+        delta_y = y2 - y1
+        delta_x = x2 - x1
+
+        # Avoid divide by zero
+        if delta_x != 0:
+            slope = delta_y / delta_x
+
+            # Concerned with magnitude
+            abs_slope = abs(slope)
+
+            # Slope is within range of min and max slope
+            if min_slope < abs_slope < max_slope:
+                # Calculating intercept
+                intercept = y1 - (slope * x1)
+
+                # Indicates left lane due to top left corner being (0,0)
+                if slope < 0:
+                    left_lines_slope.append(slope)
+                    left_lines_intercept.append(intercept)
+                else: # slope > 0
+                    right_lines_slope.append(slope)
+                    right_lines_intercept.append(intercept)
+    
+
+    # Creating two lines (one left and one right) based on the many lines 
+    # Averaging the slopes and using the starting intercepts to start drawing lines.
+
+    y_bottom = frame_height
+    y_top = int(frame_height * 0.62)
+
+    # Finding average of slopes and intercepts for both right and left lines
+    # The constructing left and right lines based on those averages.
+
+    if left_lines_slope:
+        m_avg = np.median(left_lines_slope)
+        b_avg = np.median(left_lines_intercept)
+
+        x_bottom = int((y_bottom - b_avg) / m_avg)
+        x_top = int((y_top - b_avg) / m_avg)
+
+        lanes.append((x_bottom, y_bottom, x_top, y_top))
+
+    if right_lines_slope:
+        m_avg = np.median(right_lines_slope)
+        b_avg = np.median(right_lines_intercept)
+
+        x_bottom = int((y_bottom - b_avg) / m_avg)
+        x_top = int((y_top - b_avg) / m_avg)
+
+        lanes.append((x_bottom, y_bottom, x_top, y_top))
+
+    if lanes:
+        return lanes
+    else:
+        return None
+
+###############################################################################
+# Function Name: draw_lines_on_frame
+# Description: 
+###############################################################################
+
+def draw_lines_on_frame(frame, edges_frame, lines):
     # Create a blank RGB image to draw the Hough line segments
-    h = edges_image.shape[0]
-    w = edges_image.shape[1]
+    h = edges_frame.shape[0]
+    w = edges_frame.shape[1]
     line_image = np.zeros(
         shape=(h, w, 3), 
         dtype=np.uint8
@@ -225,7 +378,7 @@ def draw_lines_on_image(image, edges_image, lines):
     # Draw each detected line segment (if any)
     if lines is not None:
         for line in lines:
-            x1, y1, x2, y2 = line[0]
+            x1, y1, x2, y2 = line
             cv2.line(
                 img=line_image,
                 pt1=(x1, y1),
@@ -236,7 +389,7 @@ def draw_lines_on_image(image, edges_image, lines):
 
     # Overlay the line image on the original image
     result = cv2.addWeighted(
-        src1=image, 
+        src1=frame, 
         alpha=0.8, 
         src2=line_image, 
         beta=1.0, 
