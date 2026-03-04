@@ -24,7 +24,9 @@ def main():
             print("Can't recieve frame. Ending")
             break
         
-        cv2.imshow('Camera', frame)
+        lanes_in_frame = detect_lanes(frame)
+
+        cv2.imshow('Camera', lanes_in_frame)
 
         # Break the loop when 'q' key is pressed
         if cv2.waitKey(1) == ord('q'):
@@ -34,14 +36,15 @@ def main():
     camera.release()
     cv2.destroyAllWindows()
 
+
 ###############################################################################
 # Function Name: detect_lanes
 # Description: 
 ###############################################################################
 
-def detect_lanes(input_frame):
+def detect_lanes(frame):
     gray_image = cv2.cvtColor(
-        src=input_image,
+        src=frame,
         code=cv2.COLOR_RGB2GRAY
         )
     
@@ -80,7 +83,7 @@ def detect_lanes(input_frame):
 
     # Draw lines and overly onto input image
     result = draw_lines_on_image(
-        image=input_image,
+        image=frame,
         edges_image=masked_edges,
         lines=hough_lines
         )
@@ -88,15 +91,62 @@ def detect_lanes(input_frame):
     return result
 
 
-
-
 ###############################################################################
 # Function Name: apply_ROI
 # Description: 
 ###############################################################################
 
-def apply_ROI(image_edges):
-    pass
+def apply_ROI(frame_edges):
+    r"""
+    (x1,y1) ------- (x4,y4)
+     \               /
+      \             /
+       (x2,y2) (x3,y3)
+    """
+
+    # Dimensions of image
+    h = frame_edges.shape[0]
+    w = frame_edges.shape[1]
+
+    # Coordinates of the vertices for the polygon that will be used as the ROI for lanes only.
+    x1 = 400
+    y1 = 350
+
+    x2 = 550
+    y2 = 350
+
+    x3 = 0
+    y3 = h
+
+    x4 = w
+    y4 = h
+
+    # Define the vertices of the polygon that will be used to mask the ROI
+    vertices = np.array([[
+        (x1, y1),
+        (x2, y2),
+        (x4, y4),
+        (x3, y3)
+    ]], dtype=np.int32)
+
+    # Create a black image of the same size as the edge-detected image
+    roi = np.zeros_like(frame_edges)
+
+    # Fill the region inside the vertices with white (255).
+    cv2.fillPoly(
+        img=roi, 
+        pts=vertices, 
+        color=255
+        )
+
+    # Perform a bitwise AND operation between the edge-detected image and the
+    # mask to keep only the edges that are within the ROI.
+    masked_edges = cv2.bitwise_and(
+        src1=frame_edges,
+        src2=roi
+        )
+    
+    return masked_edges
 
 
 
@@ -127,9 +177,64 @@ def apply_ROI(image_edges):
 ###############################################################################
 
 def hough_transform(masked_edges):
-    pass
+    # Hough transform parameters
+    rho = 1 # Distance resolution of candidate lines (accumulator rows)
+    theta = np.pi / 180 # Defines interval of how much to increment theta in line calculation.
+    threshold = 30 # Minimum number of supporting edge pixels required before a line is considered valid.
+    min_line_len = 50 # Minimum length (in pixels) required for a detected line segment.
+    max_line_gap = 200 # Maximum allowed gap between line segments that can be connected into one continuous line.
+
+    # Perform Probabilistic Hough Transform
+    # Returns detected line segments as endpoints (x1, y1, x2, y2)
+    hough_lines = cv2.HoughLinesP(
+        image=masked_edges,
+        rho=rho,
+        theta=theta,
+        threshold=threshold,
+        minLineLength=min_line_len,
+        maxLineGap=max_line_gap
+    )
+
+    return hough_lines
 
 
+###############################################################################
+# Function Name: draw_lines_on_image
+# Description: 
+###############################################################################
 
-def draw_lines_on_image(image, edges_image, lines):
-    pass
+def draw_lines_on_image(frame, edges_frame, lines):
+    # Create a blank RGB image to draw the Hough line segments
+    h = edges_frame.shape[0]
+    w = edges_frame.shape[1]
+    line_image = np.zeros(
+        shape=(h, w, 3), 
+        dtype=np.uint8
+        )
+
+    # Draw each detected line segment (if any)
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            cv2.line(
+                img=line_image,
+                pt1=(x1, y1),
+                pt2=(x2, y2),
+                color=(255, 0, 0),
+                thickness=5
+                )
+
+    # Overlay the line image on the original image
+    result = cv2.addWeighted(
+        src1=frame, 
+        alpha=0.8, 
+        src2=line_image, 
+        beta=1.0, 
+        gamma=0.0
+        )
+    
+    return result
+
+
+if __name__ == "__main__":
+    main()
