@@ -6,6 +6,8 @@ def main():
 
     if camera.isOpened(): # try to get the first frame
         rval, frame = camera.read()
+        h = frame.shape[0]
+        w = frame.shape[1]
     else:
         rval = False
 
@@ -13,13 +15,12 @@ def main():
     # define a null callback function for Trackbar
     def null(x):
         pass
-    # create three trackbars for B, G and R
     # arguments: trackbar_name, window_name, default_value, max_value, callback_fn
-    cv2.createTrackbar("x1", "ROI", 0, 1000, null)
-    cv2.createTrackbar("y1", "ROI", 0, 1000, null)
+    cv2.createTrackbar("x1", "ROI", 400, w, null)
+    cv2.createTrackbar("y1", "ROI", 350, h, null)
 
-    cv2.createTrackbar("x2", "ROI", 0, 1000, null)
-    cv2.createTrackbar("y2", "ROI", 0, 1000, null)
+    cv2.createTrackbar("x2", "ROI", 550, w, null)
+    cv2.createTrackbar("y2", "ROI", 350, h, null)
 
 
     while rval:
@@ -35,7 +36,6 @@ def main():
         y2 = cv2.getTrackbarPos('y2','ROI')
 
         flip_frame = cv2.flip(frame,1) #0 is normal, 1 is flipped over y axis
-        original1 = frame.copy()
 
         roi_frame = apply_ROI(flip_frame, x1, y1, x2, y2)
 
@@ -50,6 +50,8 @@ def main():
     cv2.destroyWindow("mask")
     cv2.destroyWindow("original")
 
+    print(f"Point 1: ({x1}, {y1})")
+    print(f"Point 2: ({x2}, {y2})")
 
 
 def apply_ROI(frame, x1, y1, x2, y2):

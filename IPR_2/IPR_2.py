@@ -7,20 +7,29 @@
 import cv2
 import numpy as np
 import os
-from pathlib import Path
+import picamera2
 
+pi_camera = None
+
+# Default ROI points (these will be overwritten if calibration is enabled)
+x1 = 400
+y1 = 350
+
+x2 = 550
+y2 = 350
 
 def main():
-    camera = cv2.VideoCapture(0)
-
-    if not camera.isOpened():
-        print("Can't open camera")
-        exit()
+    w, h = configure_camera()
     
-    while True:
-        ret, frame = camera.read()
+    roi_calibration = input("Calibrate ROI points (Yes / No)")
 
-        if not ret:
+    if roi_calibration.lower() == "yes":
+        calibrate_ROI_points(w, h)
+
+    while True:
+        frame = pi_camera.capture_array()
+
+        if frame is None:
             print("Can't recieve frame. Ending")
             break
         
@@ -28,13 +37,90 @@ def main():
 
         cv2.imshow('Camera', lanes_in_frame)
 
-        # Break the loop when 'q' key is pressed
-        if cv2.waitKey(1) == ord('q'):
+        # Break the loop when 'ESC' key is pressed
+        key = cv2.waitKey(100)
+
+        # Exit on ESC (27 is ASCII for ESC)
+        if key == 27:
             break
     
-    
-    camera.release()
+    pi_camera.stop()
+
     cv2.destroyAllWindows()
+
+
+###############################################################################
+# Function Name: configure_camera
+# Description: 
+###############################################################################
+
+def configure_camera():
+    pi_camera  = picamera2.Picamera2()
+    pi_camera.configure(
+        pi_camera.create_preview_configuration(
+            main={"size": (640, 480)}
+            )
+    )
+    pi_camera.start()
+
+    # Capturing frame and checking whether it's valid
+    frame = pi_camera.capture_array()
+    if frame is None:
+        print("Failed to capture frame")
+        exit()
+    
+    # Dimensions of image
+    h = frame.shape[0]
+    w = frame.shape[1]
+    
+    return w, h
+
+
+###############################################################################
+# Function Name: calibrate_ROI_points
+# Description: 
+###############################################################################
+
+def calibrate_ROI_points(w, h):
+    # define a null callback function for Trackbar
+    def null(x):
+        pass
+    # arguments: trackbar_name, window_name, default_value, max_value, callback_fn
+    cv2.createTrackbar("x1", "ROI", 400, w, null)
+    cv2.createTrackbar("y1", "ROI", 350, h, null)
+
+    cv2.createTrackbar("x2", "ROI", 550, w, null)
+    cv2.createTrackbar("y2", "ROI", 350, h, null)
+
+    while True:
+        # Capturing frame and checking whether it's valid
+        frame = pi_camera.capture_array()
+        if frame is None:
+            print("Failed to capture frame")
+            break
+
+        x1 = cv2.getTrackbarPos("x1", "ROI")
+        y1 = cv2.getTrackbarPos("y1", "ROI")
+        x2 = cv2.getTrackbarPos("x2", "ROI")
+        y2 = cv2.getTrackbarPos("y2", "ROI")
+
+        roi_frame = apply_ROI(frame, x1, y1, x2, y2)
+
+        cv2.imshow("ROI", roi_frame)
+
+        # Break the loop when 'ESC' key is pressed
+        key = cv2.waitKey(100)
+
+        # Exit on ESC (27 is ASCII for ESC)
+        if key == 27:
+            break
+    
+    print("Point 1 and 2 overwritten with")
+    print(f"Point 1: {x1},{y1}")
+    print(f"Point 2: {x2},{y2}")
+    print()
+
+    cv2.destroyWindow("ROI")
 
 
 ###############################################################################
@@ -45,7 +131,7 @@ def main():
 def detect_lanes(frame):
     gray_image = cv2.cvtColor(
         src=frame,
-        code=cv2.COLOR_RGB2GRAY
+        code=cv2.COLOR_BGR2GRAY
         )
     
     # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. 
@@ -109,12 +195,6 @@ def apply_ROI(frame_edges):
     w = frame_edges.shape[1]
 
     # Coordinates of the vertices for the polygon that will be used as the ROI for lanes only.
-    x1 = 400
-    y1 = 350
-
-    x2 = 550
-    y2 = 350
-
     x3 = 0
     y3 = h
 
