@@ -12,9 +12,11 @@ def main():
         rval = False
 
     cv2.namedWindow('ROI')
+
     # define a null callback function for Trackbar
     def null(x):
         pass
+    
     # arguments: trackbar_name, window_name, default_value, max_value, callback_fn
     cv2.createTrackbar("x1", "ROI", 400, w, null)
     cv2.createTrackbar("y1", "ROI", 350, h, null)
