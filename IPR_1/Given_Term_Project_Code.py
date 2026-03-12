@@ -429,9 +429,13 @@ yellow_output = "./Test_Video_Outputs/yellow_output.mp4"
 # Where start_second and end_second are integer values representing the start and end of the subclip
 # You may also uncomment the following Line for a subclip of the first 5 seconds
 
-clip2 = VideoFileClip("./Test_Videos/solidYellowLeft.mp4").subclip(0,5)
+clip2 = VideoFileClip("./Test_Videos/solidYellowLeft.mp4").subclip(0, 5)
 yellow_clip = clip2.fl_image(process_image)
-# %time yellow_clip.write_videofile(yellow_output, audio=False)
+yellow_clip = yellow_clip.set_duration(clip2.duration).set_fps(clip2.fps)
+yellow_clip.write_videofile(yellow_output, audio=False, fps=25)
+
+clip2.close()
+yellow_clip.close()
 
 
 ###############################################################################
@@ -465,9 +469,13 @@ challenge_output = "./Test_Video_Outputs/challenge_output.mp4"
 # Where start_second and end_second are integer values representing the start and end of the subclip
 # You may also uncomment the following line for a subclip of the first 5 seconds
 
-clip3 = VideoFileClip("./Test_Videos/challenge.mp4").subclip(0,5)
+clip3 = VideoFileClip("./Test_Videos/challenge.mp4").subclip(0, 5)
 challenge_clip = clip3.fl_image(process_image)
-# %time challenge_clip.write_videofile(challenge_output, audio=False)
+challenge_clip = challenge_clip.set_duration(clip3.duration).set_fps(clip3.fps)
+challenge_clip.write_videofile(challenge_output, audio=False, fps=25)
+
+clip3.close()
+challenge_clip.close()
 
 
 ###############################################################################
