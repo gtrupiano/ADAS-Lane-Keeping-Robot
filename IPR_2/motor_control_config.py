@@ -1,14 +1,9 @@
+###############################################################################
+# File Name: motor_control_config.py
+# Description: Constants for the motor control module
+###############################################################################
+
 from enum import Enum
-
-# EMA smoothing factor
-ALPHA = 0.1
-
-# Default ROI points (these will be overwritten if calibration is enabled)
-x1 = 400
-y1 = 350
-
-x2 = 550
-y2 = 350
 
 MOTOR_CONTROLLER_I2C_ADDRESS = 0x40
 MOTOR_CONTROLLER_PWM_FREQUENCY = 50 #Hz
@@ -30,6 +25,7 @@ TURN_PWM_DUTY = 1000
 STOP_PWM_DUTY = 0
 MOTOR_CONTROLLER_MAX_PWM_DUTY = 4095
 
+# Motor controller constants
 class Direction_t(Enum):
     FORWARD = 0
     BACKWARD = 1

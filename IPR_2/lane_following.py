@@ -1,12 +1,14 @@
 ###############################################################################
-# File Name: IPR_2.py
+# File Name: lane_following.py
 # Description: 
 ###############################################################################
 
+# File Imports
+import vision_config
+import motor_control
+
 # Library Imports
-import constants
 import cv2
-import Freenove_Libraries.pca9685 as pca9685
 import numpy as np
 import picamera2
 import time
@@ -146,10 +148,10 @@ def calibrate_ROI_points(w, h):
         )
 
         # Fetching trackbar positions for ROI points
-        constants.x1 = cv2.getTrackbarPos("x1", "ROI")
-        constants.y1 = cv2.getTrackbarPos("y1", "ROI")
-        constants.x2 = cv2.getTrackbarPos("x2", "ROI")
-        constants.y2 = cv2.getTrackbarPos("y2", "ROI")
+        vision_config.x1 = cv2.getTrackbarPos("x1", "ROI")
+        vision_config.y1 = cv2.getTrackbarPos("y1", "ROI")
+        vision_config.x2 = cv2.getTrackbarPos("x2", "ROI")
+        vision_config.y2 = cv2.getTrackbarPos("y2", "ROI")
 
         roi_frame = apply_ROI(frame)
 
@@ -163,8 +165,8 @@ def calibrate_ROI_points(w, h):
             break
     
     print("Point 1 and 2 overwritten with")
-    print(f"Point 1: {constants.x1},{constants.y1}")
-    print(f"Point 2: {constants.x2},{constants.y2}")
+    print(f"Point 1: {vision_config.x1},{vision_config.y1}")
+    print(f"Point 2: {vision_config.x2},{vision_config.y2}")
     print()
 
     cv2.destroyWindow("ROI")
@@ -243,7 +245,7 @@ def apply_ROI(frame_edges):
     """
 
     # Fetching global variables for ROI points and dimensions of frame
-    x1, y1, x2, y2 = constants.x1, constants.y1, constants.x2, constants.y2
+    x1, y1, x2, y2 = vision_config.x1, vision_config.y1, vision_config.x2, vision_config.y2
 
     # Dimensions of image
     h = frame_edges.shape[0]
@@ -451,7 +453,7 @@ def average_left_and_right_lanes(left_lane, right_lane):
 
         # Applying EMA on left lane
         if running_average_left_lane is not None:
-            averaged_left_lane = (constants.ALPHA * left_lane_np) + ((1 - constants.ALPHA) * running_average_left_lane)
+            averaged_left_lane = (vision_config.ALPHA * left_lane_np) + ((1 - vision_config.ALPHA) * running_average_left_lane)
         else:
             averaged_left_lane = left_lane_np
         
@@ -463,7 +465,7 @@ def average_left_and_right_lanes(left_lane, right_lane):
         
         # Applying EMA on right lane
         if running_average_right_lane is not None:
-            averaged_right_lane = (constants.ALPHA * right_lane_np) + ((1 - constants.ALPHA) * running_average_right_lane)
+            averaged_right_lane = (vision_config.ALPHA * right_lane_np) + ((1 - vision_config.ALPHA) * running_average_right_lane)
         else:
             averaged_right_lane = right_lane_np
 
