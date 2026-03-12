@@ -30,16 +30,15 @@ gray_image = None
 filtered_frame = None
 frame_edges = None
 masked_edges = None
-
+lanes_on_frame = None
 
 def main():
     global original_frame
-    global gray_image
-    global filtered_frame
-    global frame_edges
-    global masked_edges
+    global lanes_on_frame
 
     w, h = configure_camera()
+
+    motor_control.setup_motor_controller()
     
     roi_calibration_input = input("Calibrate ROI points (Yes / No)")
     roi_calibration_input = roi_calibration_input.lower()
@@ -53,24 +52,20 @@ def main():
         calibrate_ROI_points(w, h)
 
     while True:
-        original_frame = pi_camera.capture_array()
+        original_frame, validity = fetch_frame()
 
-        if original_frame is None:
-            print("Can't recieve frame")
+        if validity is False:
             break
         
-        # 0 is normal, 1 is flipped over y axis
-        original_frame = cv2.flip(original_frame, 1)
+        lanes_on_frame, left_lane, right_lane = detect_lanes(original_frame)
 
-        # Camera interprets colors as RGB, but OpenCV uses BGR, so the color spaces need to be converted
-        original_frame = cv2.cvtColor(
-            src=original_frame,
-            code=cv2.COLOR_RGB2BGR
-        )
-        
-        lanes_in_frame = detect_lanes(original_frame)
+        determine_movement(left_lane, right_lane)
 
-        cv2.imshow('Camera', lanes_in_frame)
+        cv2.imshow('Original Frame', original_frame)
+        cv2.imshow('Filtered Frame', filtered_frame)
+        cv2.imshow('Edges Frame', frame_edges)
+        cv2.imshow('Masked Edges Frame', masked_edges)
+        cv2.imshow('Lanes', lanes_on_frame)
 
         # Break the loop when 'ESC' key is pressed
         key = cv2.waitKey(100)
@@ -131,21 +126,10 @@ def calibrate_ROI_points(w, h):
     cv2.createTrackbar("y2", "ROI", 350, h, null)
 
     while True:
-        # Capturing frame and checking whether it's valid
-        frame = pi_camera.capture_array()
+        frame, validity = fetch_frame()
 
-        if frame is None:
-            print("Failed to capture frame")
+        if validity is False:
             break
-        
-        # 0 is normal, 1 is flipped over y axis
-        frame = cv2.flip(frame, 1)
-
-        # Camera interprets colors as RGB, but OpenCV uses BGR, so the color spaces need to be converted
-        frame = cv2.cvtColor(
-            src=frame,
-            code=cv2.COLOR_RGB2BGR
-        )
 
         # Fetching trackbar positions for ROI points
         vision_config.x1 = cv2.getTrackbarPos("x1", "ROI")
@@ -173,11 +157,44 @@ def calibrate_ROI_points(w, h):
 
 
 ###############################################################################
+# Function Name: fetch_frame
+# Description: 
+###############################################################################
+
+def fetch_frame():
+    validity = False
+
+    # Capturing frame and checking whether it's valid
+    frame = pi_camera.capture_array()
+
+    if frame is None:
+        print("Failed to capture frame")
+        return None, validity
+    
+    # 0 is normal, 1 is flipped over y axis
+    frame = cv2.flip(frame, 1)
+
+    # Camera interprets colors as RGB, but OpenCV uses BGR, so the color spaces need to be converted
+    frame = cv2.cvtColor(
+        src=frame,
+        code=cv2.COLOR_RGB2BGR
+    )
+
+    validity = True
+
+    return frame, validity
+
+
+###############################################################################
 # Function Name: detect_lanes
 # Description: 
 ###############################################################################
 
 def detect_lanes(frame):
+    global filtered_frame
+    global frame_edges
+    global masked_edges
+
     gray_image = cv2.cvtColor(
         src=frame,
         code=cv2.COLOR_BGR2GRAY
@@ -185,11 +202,11 @@ def detect_lanes(frame):
     
     # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. 
     # The larger the kernel size, the more blurred the image will be.
-    KERNAL_SIZE = 5
+    BLUR_KERNEL_SIZE = 5
     SIGMA_BLUR_CONTROL = 0
     filtered_frame = cv2.GaussianBlur(
         src=gray_image, 
-        ksize=(KERNAL_SIZE, KERNAL_SIZE),
+        ksize=(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE),
         sigmaX=SIGMA_BLUR_CONTROL,
         sigmaY=SIGMA_BLUR_CONTROL
         )
@@ -206,7 +223,8 @@ def detect_lanes(frame):
     masked_edges = apply_ROI(frame_edges)
 
     # # Connect dashed lane markings by filling small gaps in edges
-    # kernel = np.ones((5, 5), np.uint8)
+    # MORPH_KERNEL_SIZE = 3
+    # kernel = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE), np.uint8)
     # masked_edges = cv2.morphologyEx(
     #     src=masked_edges,
     #     op=cv2.MORPH_CLOSE,
@@ -222,13 +240,13 @@ def detect_lanes(frame):
     averaged_left_lane, averaged_right_lane = average_left_and_right_lanes(left_lane, right_lane)
 
     # Draw lines and overly onto input frame
-    result = draw_lines_on_frame(
+    lanes_on_frame = draw_lines_on_frame(
         frame=frame,
         edges_frame=masked_edges,
         lines=[averaged_left_lane, averaged_right_lane]
         )
     
-    return result
+    return lanes_on_frame, averaged_left_lane, averaged_right_lane
 
 
 ###############################################################################
@@ -521,6 +539,14 @@ def draw_lines_on_frame(frame, edges_frame, lines):
 
 
 ###############################################################################
+# Function Name: determine_movement
+# Description: 
+###############################################################################
+
+def determine_movement(left_lane, right_lane):
+    pass
+
+###############################################################################
 # Function Name: shutdown_peripherals
 # Description: 
 ###############################################################################
@@ -528,6 +554,8 @@ def draw_lines_on_frame(frame, edges_frame, lines):
 def shutdown_peripherals():
     pi_camera.stop()
     pi_camera.close()
+
+    motor_control.shutdown_motors()
 
     cv2.destroyAllWindows()
 
