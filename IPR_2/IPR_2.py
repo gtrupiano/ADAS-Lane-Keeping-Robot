@@ -6,7 +6,7 @@
 # Library Imports
 import cv2
 import numpy as np
-import pca9685
+import Freenove_Libraries.pca9685 as pca9685
 #import picamera2
 import time
 
