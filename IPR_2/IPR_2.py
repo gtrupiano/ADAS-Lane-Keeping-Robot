@@ -4,10 +4,18 @@
 ###############################################################################
 
 # Library Imports
+import constants
 import cv2
+#import Freenove_Libraries.pca9685 as pca9685
 import numpy as np
-import Freenove_Libraries.pca9685 as pca9685
-#import picamera2
+# Since this can be run on a normal computer or a Raspberry Pi with a PiCamera,
+# the picamera2 library is imported with a try and sets a variable since it isn't supported on normal computers.
+try:
+    import picamera2
+    PICAMERA_AVAILABLE = True
+except ImportError:
+    PICAMERA_AVAILABLE = False
+
 import time
 
 # Used to let the system work with both PiCamera and normal webcam
@@ -24,14 +32,12 @@ last_right_lane = None
 running_average_left_lane = None
 running_average_right_lane = None
 
-ALPHA = 0.1
+# Frame at different stages of processing
+gray_image = None
+filtered_frame = None
+frame_edges = None
+masked_edges = None
 
-# Default ROI points (these will be overwritten if calibration is enabled)
-x1 = 400
-y1 = 350
-
-x2 = 550
-y2 = 350
 
 def main():
     w, h = configure_camera()
@@ -72,13 +78,7 @@ def main():
         if key == 27:
             break
     
-    if using_pi_camera:
-        pi_camera.stop()
-        pi_camera.close()
-    else:
-        camera.release()
-
-    cv2.destroyAllWindows()
+    shutdown_peripherals()
 
 
 ###############################################################################
@@ -91,9 +91,17 @@ def configure_camera():
     global pi_camera
     global camera
 
-    using_pi_cam_response = input("Use PiCamera (Yes / No)")
+    using_pi_camera_response = input("Use PiCamera (Yes / No)")
 
-    if using_pi_cam_response.lower() == "yes":
+    # Repeatedly ask for input until a valid response is given
+    while (using_pi_camera_response.lower() != "yes") and (using_pi_camera_response.lower() != "no"):
+        using_pi_camera_response = input("Invalid response. Use PiCamera (Yes / No)")
+        
+    if using_pi_camera_response.lower() == "yes":
+        if not PICAMERA_AVAILABLE:
+            print("PiCamera is not available on this system.")
+            exit()
+
         pi_camera  = picamera2.Picamera2()
         pi_camera.configure(
             pi_camera.create_preview_configuration(
@@ -109,7 +117,7 @@ def configure_camera():
             exit()
 
         using_pi_camera = True
-    else: # using_pi_cam_response.lower() == "no":
+    else: # using_pi_camera_response.lower() == "no":
         camera = cv2.VideoCapture(0)
 
         if not camera.isOpened():
@@ -137,7 +145,6 @@ def configure_camera():
 ###############################################################################
 
 def calibrate_ROI_points(w, h):
-    global x1, y1, x2, y2
     global using_pi_camera
 
     # define a null callback function for Trackbar
@@ -174,10 +181,10 @@ def calibrate_ROI_points(w, h):
             # 0 is normal, 1 is flipped over y axis
             frame = cv2.flip(frame, 1)
             
-        x1 = cv2.getTrackbarPos("x1", "ROI")
-        y1 = cv2.getTrackbarPos("y1", "ROI")
-        x2 = cv2.getTrackbarPos("x2", "ROI")
-        y2 = cv2.getTrackbarPos("y2", "ROI")
+        constants.x1 = cv2.getTrackbarPos("x1", "ROI")
+        constants.y1 = cv2.getTrackbarPos("y1", "ROI")
+        constants.x2 = cv2.getTrackbarPos("x2", "ROI")
+        constants.y2 = cv2.getTrackbarPos("y2", "ROI")
 
         roi_frame = apply_ROI(frame)
 
@@ -191,8 +198,8 @@ def calibrate_ROI_points(w, h):
             break
     
     print("Point 1 and 2 overwritten with")
-    print(f"Point 1: {x1},{y1}")
-    print(f"Point 2: {x2},{y2}")
+    print(f"Point 1: {constants.x1},{constants.y1}")
+    print(f"Point 2: {constants.x2},{constants.y2}")
     print()
 
     cv2.destroyWindow("ROI")
@@ -270,7 +277,8 @@ def apply_ROI(frame_edges):
        (x2,y2) (x3,y3)
     """
 
-    global x1, y1, x2, y2
+    # Fetching global variables for ROI points and dimensions of frame
+    x1, y1, x2, y2 = constants.x1, constants.y1, constants.x2, constants.y2
 
     # Dimensions of image
     h = frame_edges.shape[0]
@@ -464,34 +472,47 @@ def average_left_and_right_lanes(left_lane, right_lane):
     global last_left_lane
     global last_right_lane
 
+    averaged_left_lane = None
+    averaged_right_lane = None
+
     if left_lane is None:
         left_lane = last_left_lane
 
     if right_lane is None:
         right_lane = last_right_lane
     
-    if left_lane is None or right_lane is None:
-        return (None, None)
+    if left_lane is not None:
+        left_lane_np = np.array(left_lane, dtype=np.float32)
 
-    left_lane_np = np.array(left_lane, dtype=np.float32)
-    right_lane_np = np.array(right_lane, dtype=np.float32)
+        # Applying EMA on left lane
+        if running_average_left_lane is not None:
+            averaged_left_lane = (constants.ALPHA * left_lane_np) + ((1 - constants.ALPHA) * running_average_left_lane)
+        else:
+            averaged_left_lane = left_lane_np
+        
+        # Update running average reference
+        running_average_left_lane = averaged_left_lane
 
-    # Applying EMA on both left and rigth lanes
-    if running_average_left_lane is not None:
-        averaged_left_lane = (ALPHA * left_lane_np) + ((1 - ALPHA) * running_average_left_lane)
-    else:
-        averaged_left_lane = left_lane_np
+    if right_lane is not None:
+        right_lane_np = np.array(right_lane, dtype=np.float32)
+        
+        # Applying EMA on right lane
+        if running_average_right_lane is not None:
+            averaged_right_lane = (constants.ALPHA * right_lane_np) + ((1 - constants.ALPHA) * running_average_right_lane)
+        else:
+            averaged_right_lane = right_lane_np
 
-    if running_average_right_lane is not None:
-        averaged_right_lane = (ALPHA * right_lane_np) + ((1 - ALPHA) * running_average_right_lane)
-    else:
-        averaged_right_lane = right_lane_np
+        # Update running average reference
+        running_average_right_lane = averaged_right_lane
+    
+    if averaged_left_lane is not None:
+        averaged_left_lane = tuple(averaged_left_lane.astype(int))
 
-    # Update running average references
-    running_average_left_lane = averaged_left_lane
-    running_average_right_lane = averaged_right_lane
+    if averaged_right_lane is not None:
+        averaged_right_lane = tuple(averaged_right_lane.astype(int))
 
-    return tuple(averaged_left_lane.astype(int)), tuple(averaged_right_lane.astype(int))
+    return averaged_left_lane, averaged_right_lane
+
 
 ###############################################################################
 # Function Name: draw_lines_on_frame
@@ -530,6 +551,21 @@ def draw_lines_on_frame(frame, edges_frame, lines):
         )
     
     return result
+
+
+###############################################################################
+# Function Name: shutdown_peripherals
+# Description: 
+###############################################################################
+
+def shutdown_peripherals():
+    if using_pi_camera:
+        pi_camera.stop()
+        pi_camera.close()
+    else:
+        camera.release()
+
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
