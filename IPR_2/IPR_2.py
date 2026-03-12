@@ -6,23 +6,13 @@
 # Library Imports
 import constants
 import cv2
-#import Freenove_Libraries.pca9685 as pca9685
+import Freenove_Libraries.pca9685 as pca9685
 import numpy as np
-# Since this can be run on a normal computer or a Raspberry Pi with a PiCamera,
-# the picamera2 library is imported with a try and sets a variable since it isn't supported on normal computers.
-try:
-    import picamera2
-    PICAMERA_AVAILABLE = True
-except ImportError:
-    PICAMERA_AVAILABLE = False
-
+import picamera2
 import time
 
-# Used to let the system work with both PiCamera and normal webcam
-using_pi_camera = None
-
+# Pi Camera object
 pi_camera = None
-camera = None
 
 # Last good left and right lanes
 last_left_lane = None
@@ -33,6 +23,7 @@ running_average_left_lane = None
 running_average_right_lane = None
 
 # Frame at different stages of processing
+original_frame = None
 gray_image = None
 filtered_frame = None
 frame_edges = None
@@ -40,34 +31,42 @@ masked_edges = None
 
 
 def main():
+    global original_frame
+    global gray_image
+    global filtered_frame
+    global frame_edges
+    global masked_edges
+
     w, h = configure_camera()
     
-    roi_calibration = input("Calibrate ROI points (Yes / No)")
+    roi_calibration_input = input("Calibrate ROI points (Yes / No)")
+    roi_calibration_input = roi_calibration_input.lower()
 
-    if roi_calibration.lower() == "yes":
+    # Loop until valid input is received
+    while roi_calibration_input != "yes" and roi_calibration_input != "no":
+        roi_calibration_input = input("Invalid input. Calibrate ROI points (Yes / No)")
+        roi_calibration_input = roi_calibration_input.lower()
+
+    if roi_calibration_input.lower() == "yes":
         calibrate_ROI_points(w, h)
 
     while True:
-        if using_pi_camera:
-            frame = pi_camera.capture_array()
+        original_frame = pi_camera.capture_array()
 
-            if frame is None:
-                print("Can't recieve frame")
-                break
-            
-            # 0 is normal, 1 is flipped over y axis
-            frame = cv2.flip(frame, 1)
-        else:
-            ret, frame = camera.read()
-
-            if not ret:
-                print("Can't recieve frame")
-                break
-
-            # 0 is normal, 1 is flipped over y axis
-            frame = cv2.flip(frame, 1)
+        if original_frame is None:
+            print("Can't recieve frame")
+            break
         
-        lanes_in_frame = detect_lanes(frame)
+        # 0 is normal, 1 is flipped over y axis
+        original_frame = cv2.flip(original_frame, 1)
+
+        # Camera interprets colors as RGB, but OpenCV uses BGR, so the color spaces need to be converted
+        original_frame = cv2.cvtColor(
+            src=original_frame,
+            code=cv2.COLOR_RGB2BGR
+        )
+        
+        lanes_in_frame = detect_lanes(original_frame)
 
         cv2.imshow('Camera', lanes_in_frame)
 
@@ -87,50 +86,21 @@ def main():
 ###############################################################################
 
 def configure_camera():
-    global using_pi_camera
     global pi_camera
-    global camera
+    
+    pi_camera  = picamera2.Picamera2()
+    pi_camera.configure(
+        pi_camera.create_preview_configuration(
+            main={"size": (640, 480)}
+            )
+    )
+    pi_camera.start()
 
-    using_pi_camera_response = input("Use PiCamera (Yes / No)")
-
-    # Repeatedly ask for input until a valid response is given
-    while (using_pi_camera_response.lower() != "yes") and (using_pi_camera_response.lower() != "no"):
-        using_pi_camera_response = input("Invalid response. Use PiCamera (Yes / No)")
-        
-    if using_pi_camera_response.lower() == "yes":
-        if not PICAMERA_AVAILABLE:
-            print("PiCamera is not available on this system.")
-            exit()
-
-        pi_camera  = picamera2.Picamera2()
-        pi_camera.configure(
-            pi_camera.create_preview_configuration(
-                main={"size": (640, 480)}
-                )
-        )
-        pi_camera.start()
-
-        # Capturing frame and checking whether it's valid
-        frame = pi_camera.capture_array()
-        if frame is None:
-            print("Failed to capture frame")
-            exit()
-
-        using_pi_camera = True
-    else: # using_pi_camera_response.lower() == "no":
-        camera = cv2.VideoCapture(0)
-
-        if not camera.isOpened():
-            print("Can't open camera")
-            exit()
-        
-        ret, frame = camera.read()
-
-        if not ret:
-            print("Can't recieve frame. Ending")
-            exit()
-
-        using_pi_camera = False
+    # Capturing frame and checking whether it's valid
+    frame = pi_camera.capture_array()
+    if frame is None:
+        print("Failed to capture frame")
+        exit()
 
     # Dimensions of image
     h = frame.shape[0]
@@ -145,8 +115,6 @@ def configure_camera():
 ###############################################################################
 
 def calibrate_ROI_points(w, h):
-    global using_pi_camera
-
     # define a null callback function for Trackbar
     def null(x):
         pass
@@ -162,25 +130,22 @@ def calibrate_ROI_points(w, h):
 
     while True:
         # Capturing frame and checking whether it's valid
-        if using_pi_camera:
-            frame = pi_camera.capture_array()
+        frame = pi_camera.capture_array()
 
-            if frame is None:
-                print("Failed to capture frame")
-                break
-            
-            # 0 is normal, 1 is flipped over y axis
-            frame = cv2.flip(frame, 1)
-        else:
-            ret, frame = camera.read()
+        if frame is None:
+            print("Failed to capture frame")
+            break
+        
+        # 0 is normal, 1 is flipped over y axis
+        frame = cv2.flip(frame, 1)
 
-            if not ret:
-                print("Can't recieve frame")
-                break
-            
-            # 0 is normal, 1 is flipped over y axis
-            frame = cv2.flip(frame, 1)
-            
+        # Camera interprets colors as RGB, but OpenCV uses BGR, so the color spaces need to be converted
+        frame = cv2.cvtColor(
+            src=frame,
+            code=cv2.COLOR_RGB2BGR
+        )
+
+        # Fetching trackbar positions for ROI points
         constants.x1 = cv2.getTrackbarPos("x1", "ROI")
         constants.y1 = cv2.getTrackbarPos("y1", "ROI")
         constants.x2 = cv2.getTrackbarPos("x2", "ROI")
@@ -559,11 +524,8 @@ def draw_lines_on_frame(frame, edges_frame, lines):
 ###############################################################################
 
 def shutdown_peripherals():
-    if using_pi_camera:
-        pi_camera.stop()
-        pi_camera.close()
-    else:
-        camera.release()
+    pi_camera.stop()
+    pi_camera.close()
 
     cv2.destroyAllWindows()
 
