@@ -5,7 +5,7 @@
 #              just making sure the motors work as expected.
 ###############################################################################
 
-import Freenove_Libraries.pca9685 as pca9685
+import pca9685
 import time
 from enum import Enum
 
@@ -143,14 +143,14 @@ def set_motor(in1_chnl, in2_chnl, duty):
         if duty > MOTOR_CONTROLLER_MAX_PWM_DUTY:
             duty = MOTOR_CONTROLLER_MAX_PWM_DUTY
 
-        motor_controller.set_motor_pwm(in1_chnl, 0)
-        motor_controller.set_motor_pwm(in2_chnl, duty)
+        motor_controller.set_motor_pwm(in2_chnl, 0)
+        motor_controller.set_motor_pwm(in1_chnl, duty)
     elif duty < 0:
         if abs(duty) > MOTOR_CONTROLLER_MAX_PWM_DUTY:
             duty = -MOTOR_CONTROLLER_MAX_PWM_DUTY
 
-        motor_controller.set_motor_pwm(in2_chnl, 0)
-        motor_controller.set_motor_pwm(in1_chnl, abs(duty))
+        motor_controller.set_motor_pwm(in1_chnl, 0)
+        motor_controller.set_motor_pwm(in2_chnl, abs(duty))
     else:
         motor_controller.set_motor_pwm(in1_chnl, STOP_PWM_DUTY)
         motor_controller.set_motor_pwm(in2_chnl, STOP_PWM_DUTY)

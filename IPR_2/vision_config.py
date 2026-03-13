@@ -4,11 +4,11 @@
 ###############################################################################
 
 # EMA smoothing factor
-ALPHA = 0.1
+ALPHA = 0.05
 
 # Default ROI points (these will be overwritten if calibration is enabled)
-x1 = 400
-y1 = 350
+x1 = 166
+y1 = 275
 
-x2 = 550
-y2 = 350
+x2 = 528
+y2 = 264

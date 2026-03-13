@@ -103,8 +103,8 @@ def motor_move_in_direction(direction):
 
         case motor_control_config.Direction_t.LEFT:
             set_all_motors(
-                duty_left_top= -motor_control_config.TURN_PWM_DUTY, # May change to STOP_PWM_DUTY for more gentle turn
-                duty_left_bottom= -motor_control_config.TURN_PWM_DUTY, # May change to STOP_PWM_DUTY for more gentle turn
+                duty_left_top= 0, # May change to STOP_PWM_DUTY for more gentle turn
+                duty_left_bottom= 0, # May change to STOP_PWM_DUTY for more gentle turn
                 duty_right_top= motor_control_config.TURN_PWM_DUTY, 
                 duty_right_bottom= motor_control_config.TURN_PWM_DUTY
             ) 
@@ -178,14 +178,14 @@ def set_motor(in1_chnl, in2_chnl, duty):
         if duty > motor_control_config.MOTOR_CONTROLLER_MAX_PWM_DUTY:
             duty = motor_control_config.MOTOR_CONTROLLER_MAX_PWM_DUTY
 
-        motor_controller.set_motor_pwm(in1_chnl, 0)
-        motor_controller.set_motor_pwm(in2_chnl, duty)
+        motor_controller.set_motor_pwm(in2_chnl, 0)
+        motor_controller.set_motor_pwm(in1_chnl, duty)
     elif duty < 0:
         if abs(duty) > motor_control_config.MOTOR_CONTROLLER_MAX_PWM_DUTY:
             duty = -motor_control_config.MOTOR_CONTROLLER_MAX_PWM_DUTY
 
-        motor_controller.set_motor_pwm(in2_chnl, 0)
-        motor_controller.set_motor_pwm(in1_chnl, abs(duty))
+        motor_controller.set_motor_pwm(in1_chnl, 0)
+        motor_controller.set_motor_pwm(in2_chnl, abs(duty))
     else:
         motor_controller.set_motor_pwm(in1_chnl, motor_control_config.STOP_PWM_DUTY)
         motor_controller.set_motor_pwm(in2_chnl, motor_control_config.STOP_PWM_DUTY)

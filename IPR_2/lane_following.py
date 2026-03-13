@@ -119,11 +119,11 @@ def calibrate_ROI_points(w, h):
     cv2.namedWindow("ROI")
 
     # arguments: trackbar_name, window_name, default_value, max_value, callback_fn
-    cv2.createTrackbar("x1", "ROI", 400, w, null)
-    cv2.createTrackbar("y1", "ROI", 350, h, null)
+    cv2.createTrackbar("x1", "ROI", vision_config.x1, w, null)
+    cv2.createTrackbar("y1", "ROI", vision_config.y1, h, null)
 
-    cv2.createTrackbar("x2", "ROI", 550, w, null)
-    cv2.createTrackbar("y2", "ROI", 350, h, null)
+    cv2.createTrackbar("x2", "ROI", vision_config.x2, w, null)
+    cv2.createTrackbar("y2", "ROI", vision_config.y2, h, null)
 
     while True:
         frame, validity = fetch_frame()
@@ -172,7 +172,7 @@ def fetch_frame():
         return None, validity
     
     # 0 is normal, 1 is flipped over y axis
-    frame = cv2.flip(frame, 1)
+    #frame = cv2.flip(frame, 1)
 
     # Camera interprets colors as RGB, but OpenCV uses BGR, so the color spaces need to be converted
     frame = cv2.cvtColor(
@@ -365,7 +365,7 @@ def filter_lines(lines, min_slope, max_slope, frame_height):
 
     # No lines found from Hough transform
     if lines is None:
-        return (last_left_lane, last_right_lane)
+        return (None, None)
     
     left_lines_slope = []
     left_lines_intercept = []
@@ -454,42 +454,34 @@ def filter_lines(lines, min_slope, max_slope, frame_height):
 def average_left_and_right_lanes(left_lane, right_lane):
     global running_average_left_lane
     global running_average_right_lane
-    global last_left_lane
-    global last_right_lane
 
     averaged_left_lane = None
     averaged_right_lane = None
-
-    if left_lane is None:
-        left_lane = last_left_lane
-
-    if right_lane is None:
-        right_lane = last_right_lane
     
     if left_lane is not None:
         left_lane_np = np.array(left_lane, dtype=np.float32)
 
-        # Applying EMA on left lane
         if running_average_left_lane is not None:
             averaged_left_lane = (vision_config.ALPHA * left_lane_np) + ((1 - vision_config.ALPHA) * running_average_left_lane)
         else:
             averaged_left_lane = left_lane_np
-        
-        # Update running average reference
+
         running_average_left_lane = averaged_left_lane
+    else:
+        running_average_left_lane = None
 
     if right_lane is not None:
         right_lane_np = np.array(right_lane, dtype=np.float32)
-        
-        # Applying EMA on right lane
+
         if running_average_right_lane is not None:
             averaged_right_lane = (vision_config.ALPHA * right_lane_np) + ((1 - vision_config.ALPHA) * running_average_right_lane)
         else:
             averaged_right_lane = right_lane_np
 
-        # Update running average reference
         running_average_right_lane = averaged_right_lane
-    
+    else:
+        running_average_right_lane = None
+
     if averaged_left_lane is not None:
         averaged_left_lane = tuple(averaged_left_lane.astype(int))
 
@@ -544,7 +536,28 @@ def draw_lines_on_frame(frame, edges_frame, lines):
 ###############################################################################
 
 def determine_movement(left_lane, right_lane):
-    pass
+    if left_lane is None and right_lane is None:
+        motor_control.stop_motors()
+        return
+
+    FRAME_CENTER_X = 320
+    CENTER_THRESHOLD = 20
+
+    if left_lane is not None and right_lane is not None:
+        lane_center_x = int((left_lane[0] + right_lane[0]) / 2)
+    elif left_lane is not None:
+        lane_center_x = left_lane[0] + 160
+    else:
+        lane_center_x = right_lane[0] - 160
+
+    error = lane_center_x - FRAME_CENTER_X
+
+    if error < -CENTER_THRESHOLD:
+        motor_control.turn_left()
+    elif error > CENTER_THRESHOLD:
+        motor_control.turn_right()
+    else:
+        motor_control.move_forward()
 
 ###############################################################################
 # Function Name: shutdown_peripherals
