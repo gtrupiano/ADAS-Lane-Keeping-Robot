@@ -6,15 +6,19 @@
 # Library Imports
 import numpy as np
 
+# Camera Parameters
+CAMERA_WIDTH = 1920
+CAMERA_HEIGHT = 1080
+
 # EMA smoothing factor
-ALPHA = 0.05
+ALPHA = 0.005
 
 # Default ROI points (these will be overwritten if calibration is enabled)
-x1 = 166
-y1 = 275
+x1 = 1025
+y1 = 505
 
-x2 = 528
-y2 = 264
+x2 = 1863
+y2 = 505
 
 # Filtering parameters
 # Gaussian blur parameters
@@ -37,4 +41,4 @@ MIN_SLOPE = 0.5
 MAX_SLOPE = 2.5
 
 # Centering parameters
-CENTER_THRESHOLD = 20
+CENTER_THRESHOLD = 200

@@ -73,7 +73,7 @@ def main():
         cv2.imshow('Lanes', lanes_on_frame)
 
         # Break the loop when 'ESC' key is pressed
-        key = cv2.waitKey(100)
+        key = cv2.waitKey(10)
 
         # Exit on ESC (27 is ASCII for ESC)
         if key == 27:
@@ -93,7 +93,7 @@ def configure_camera():
     pi_camera  = picamera2.Picamera2()
     pi_camera.configure(
         pi_camera.create_preview_configuration(
-            main={"size": (640, 480)}
+            main={"size": (vision_config.CAMERA_WIDTH,vision_config.CAMERA_HEIGHT)}
             )
     )
     pi_camera.start()
@@ -197,15 +197,10 @@ def detect_lanes(frame):
     global frame_edges
     global masked_edges
 
-    gray_image = cv2.cvtColor(
-        src=frame,
-        code=cv2.COLOR_BGR2GRAY
-        )
-    
     # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. 
     # The larger the kernel size, the more blurred the image will be.
     filtered_frame = cv2.GaussianBlur(
-        src=gray_image, 
+        src=frame, 
         ksize=(vision_config.BLUR_KERNEL_SIZE, vision_config.BLUR_KERNEL_SIZE),
         sigmaX=vision_config.SIGMA_BLUR_CONTROL,
         sigmaY=vision_config.SIGMA_BLUR_CONTROL
@@ -233,7 +228,7 @@ def detect_lanes(frame):
     hough_lines = hough_transform(masked_edges)
 
     # Filter out lines that have non ideal slopes
-    left_lane, right_lane = filter_lines(hough_lines, 0.5, 2.5, h)
+    left_lane, right_lane = filter_lines(hough_lines, vision_config.MIN_SLOPE, vision_config.MAX_SLOPE, h)
 
     # Apply an EMA to the left and right lane objects to smooth out the lane detection over time
     averaged_left_lane, averaged_right_lane = average_left_and_right_lanes(left_lane, right_lane)
