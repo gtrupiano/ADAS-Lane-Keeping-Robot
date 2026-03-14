@@ -24,6 +24,9 @@ last_right_lane = None
 running_average_left_lane = None
 running_average_right_lane = None
 
+w = None
+h = None
+
 # Frame at different stages of processing
 original_frame = None
 gray_image = None
@@ -35,6 +38,8 @@ lanes_on_frame = None
 def main():
     global original_frame
     global lanes_on_frame
+    global w
+    global h
 
     w, h = configure_camera()
 
@@ -171,9 +176,6 @@ def fetch_frame():
         print("Failed to capture frame")
         return None, validity
     
-    # 0 is normal, 1 is flipped over y axis
-    #frame = cv2.flip(frame, 1)
-
     # Camera interprets colors as RGB, but OpenCV uses BGR, so the color spaces need to be converted
     frame = cv2.cvtColor(
         src=frame,
@@ -202,21 +204,17 @@ def detect_lanes(frame):
     
     # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. 
     # The larger the kernel size, the more blurred the image will be.
-    BLUR_KERNEL_SIZE = 5
-    SIGMA_BLUR_CONTROL = 0
     filtered_frame = cv2.GaussianBlur(
         src=gray_image, 
-        ksize=(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE),
-        sigmaX=SIGMA_BLUR_CONTROL,
-        sigmaY=SIGMA_BLUR_CONTROL
+        ksize=(vision_config.BLUR_KERNEL_SIZE, vision_config.BLUR_KERNEL_SIZE),
+        sigmaX=vision_config.SIGMA_BLUR_CONTROL,
+        sigmaY=vision_config.SIGMA_BLUR_CONTROL
         )
 
-    LOW_THRESHOLD = 50
-    HIGH_THRESHOLD = 150
     frame_edges = cv2.Canny(
         image=filtered_frame, 
-        threshold1=LOW_THRESHOLD,
-        threshold2=HIGH_THRESHOLD
+        threshold1=vision_config.CANNY_LOW_THRESHOLD,
+        threshold2=vision_config.CANNY_HIGH_THRESHOLD
         )
 
     # Edges that are within the ROI
@@ -235,8 +233,9 @@ def detect_lanes(frame):
     hough_lines = hough_transform(masked_edges)
 
     # Filter out lines that have non ideal slopes
-    left_lane, right_lane = filter_lines(hough_lines, 0.5, 2.5, frame.shape[0])
+    left_lane, right_lane = filter_lines(hough_lines, 0.5, 2.5, h)
 
+    # Apply an EMA to the left and right lane objects to smooth out the lane detection over time
     averaged_left_lane, averaged_right_lane = average_left_and_right_lanes(left_lane, right_lane)
 
     # Draw lines and overly onto input frame
@@ -305,7 +304,6 @@ def apply_ROI(frame_edges):
     return masked_edges
 
 
-
 ###############################################################################
 # Function Name: hough_transform
 # Description: Applies the Probabilistic Hough Transform to detect straight line segments
@@ -333,22 +331,15 @@ def apply_ROI(frame_edges):
 ###############################################################################
 
 def hough_transform(masked_edges):
-    # Hough transform parameters
-    rho = 1 # Distance resolution of candidate lines (accumulator rows)
-    theta = np.pi / 180 # Defines interval of how much to increment theta in line calculation.
-    threshold = 30 # Minimum number of supporting edge pixels required before a line is considered valid.
-    min_line_len = 50 # Minimum length (in pixels) required for a detected line segment.
-    max_line_gap = 200 # Maximum allowed gap between line segments that can be connected into one continuous line.
-
     # Perform Probabilistic Hough Transform
     # Returns detected line segments as endpoints (x1, y1, x2, y2)
     hough_lines = cv2.HoughLinesP(
         image=masked_edges,
-        rho=rho,
-        theta=theta,
-        threshold=threshold,
-        minLineLength=min_line_len,
-        maxLineGap=max_line_gap
+        rho=vision_config.HOUGH_RHO,
+        theta=vision_config.HOUGH_THETA,
+        threshold=vision_config.HOUGH_THRESHOLD,
+        minLineLength=vision_config.HOUGH_MIN_LINE_LEN,
+        maxLineGap=vision_config.HOUGH_MAX_LINE_GAP
     )
 
     return hough_lines
@@ -498,8 +489,6 @@ def average_left_and_right_lanes(left_lane, right_lane):
 
 def draw_lines_on_frame(frame, edges_frame, lines):
     # Create a blank RGB image to draw the Hough line segments
-    h = edges_frame.shape[0]
-    w = edges_frame.shape[1]
     line_image = np.zeros(
         shape=(h, w, 3), 
         dtype=np.uint8
@@ -536,28 +525,31 @@ def draw_lines_on_frame(frame, edges_frame, lines):
 ###############################################################################
 
 def determine_movement(left_lane, right_lane):
+    # If no lanes are detected, stop the motors and wait for the next frame
     if left_lane is None and right_lane is None:
         motor_control.stop_motors()
         return
 
-    FRAME_CENTER_X = 320
-    CENTER_THRESHOLD = 20
+    frame_center_x = w / 2
 
     if left_lane is not None and right_lane is not None:
+        # Average the x-coordinates of the bottom endpoints of the left and right lanes to get the lane center
         lane_center_x = int((left_lane[0] + right_lane[0]) / 2)
     elif left_lane is not None:
+        # If only the left lane is detected, assume the lane center is a fixed distance to the right of the left lane
         lane_center_x = left_lane[0] + 160
     else:
         lane_center_x = right_lane[0] - 160
 
-    error = lane_center_x - FRAME_CENTER_X
+    error = lane_center_x - frame_center_x
 
-    if error < -CENTER_THRESHOLD:
+    if error < -vision_config.CENTER_THRESHOLD:
         motor_control.turn_left()
-    elif error > CENTER_THRESHOLD:
+    elif error > vision_config.CENTER_THRESHOLD:
         motor_control.turn_right()
     else:
         motor_control.move_forward()
+
 
 ###############################################################################
 # Function Name: shutdown_peripherals
