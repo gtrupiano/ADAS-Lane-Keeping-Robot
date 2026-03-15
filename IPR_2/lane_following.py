@@ -20,28 +20,31 @@ pi_camera = None
 last_left_lane = None
 last_right_lane = None
 
+# Number of consecutive frames each lane has been missing
+left_lane_missing_count = 0
+right_lane_missing_count = 0
+
 # Running averages for left and right lanes
 running_average_left_lane = None
 running_average_right_lane = None
 
-w = None
-h = None
-
 # Frame at different stages of processing
 original_frame = None
-gray_image = None
+resized_frame = None
 filtered_frame = None
 frame_edges = None
-masked_edges = None
+roi_edges = None
 lanes_on_frame = None
 
 def main():
     global original_frame
+    global resized_frame
+    global filtered_frame
+    global frame_edges
+    global roi_edges
     global lanes_on_frame
-    global w
-    global h
 
-    w, h = configure_camera()
+    configure_camera()
 
     motor_control.setup_motor_controller()
     
@@ -54,23 +57,32 @@ def main():
         roi_calibration_input = roi_calibration_input.lower()
 
     if roi_calibration_input.lower() == "yes":
-        calibrate_ROI_points(w, h)
+        calibrate_ROI_points()
 
     while True:
-        original_frame, validity = fetch_frame()
+        resized_frame, validity = fetch_frame()
 
         if validity is False:
             break
         
-        lanes_on_frame, left_lane, right_lane = detect_lanes(original_frame)
+        # Detecting lanes and drawing them on the original frame
+        lanes_on_frame, left_lane, right_lane = detect_lanes(resized_frame)
 
+        # Determine movement based on the detected lanes and send commands to the motor controller
         determine_movement(left_lane, right_lane)
 
-        cv2.imshow('Original Frame', original_frame)
-        cv2.imshow('Filtered Frame', filtered_frame)
-        cv2.imshow('Edges Frame', frame_edges)
-        cv2.imshow('Masked Edges Frame', masked_edges)
-        cv2.imshow('Lanes', lanes_on_frame)
+        # Display frames based on whether debug mode is enabled or not
+        if vision_config.SHOW_DEBUG_FRAMES:
+            cv2.imshow('Original Frame', original_frame)
+            cv2.imshow('Resized Frame', resized_frame)
+            cv2.imshow('Filtered Frame', filtered_frame)
+            cv2.imshow('Edges Frame', frame_edges)
+            cv2.imshow('ROI Edges Frame', roi_edges)
+            cv2.imshow('Lanes', lanes_on_frame)
+        else:
+            cv2.imshow('Resized Frame', resized_frame)
+            cv2.imshow('Lanes', lanes_on_frame)
+
 
         # Break the loop when 'ESC' key is pressed
         key = cv2.waitKey(10)
@@ -93,8 +105,11 @@ def configure_camera():
     pi_camera  = picamera2.Picamera2()
     pi_camera.configure(
         pi_camera.create_preview_configuration(
-            main={"size": (vision_config.CAMERA_WIDTH,vision_config.CAMERA_HEIGHT)}
-            )
+            main={
+                "size": (vision_config.CAMERA_WIDTH, vision_config.CAMERA_HEIGHT),
+                "format": "RGB888"
+            }
+        )
     )
     pi_camera.start()
 
@@ -104,19 +119,13 @@ def configure_camera():
         print("Failed to capture frame")
         exit()
 
-    # Dimensions of image
-    h = frame.shape[0]
-    w = frame.shape[1]
-    
-    return w, h
-
 
 ###############################################################################
 # Function Name: calibrate_ROI_points
 # Description: 
 ###############################################################################
 
-def calibrate_ROI_points(w, h):
+def calibrate_ROI_points():
     # define a null callback function for Trackbar
     def null(x):
         pass
@@ -124,11 +133,11 @@ def calibrate_ROI_points(w, h):
     cv2.namedWindow("ROI")
 
     # arguments: trackbar_name, window_name, default_value, max_value, callback_fn
-    cv2.createTrackbar("x1", "ROI", vision_config.x1, w, null)
-    cv2.createTrackbar("y1", "ROI", vision_config.y1, h, null)
+    cv2.createTrackbar("X1", "ROI", vision_config.X1, vision_config.PROCESSING_WIDTH, null)
+    cv2.createTrackbar("Y1", "ROI", vision_config.Y1, vision_config.PROCESSING_HEIGHT, null)
 
-    cv2.createTrackbar("x2", "ROI", vision_config.x2, w, null)
-    cv2.createTrackbar("y2", "ROI", vision_config.y2, h, null)
+    cv2.createTrackbar("X2", "ROI", vision_config.X2, vision_config.PROCESSING_WIDTH, null)
+    cv2.createTrackbar("Y2", "ROI", vision_config.Y2, vision_config.PROCESSING_HEIGHT, null)
 
     while True:
         frame, validity = fetch_frame()
@@ -137,25 +146,25 @@ def calibrate_ROI_points(w, h):
             break
 
         # Fetching trackbar positions for ROI points
-        vision_config.x1 = cv2.getTrackbarPos("x1", "ROI")
-        vision_config.y1 = cv2.getTrackbarPos("y1", "ROI")
-        vision_config.x2 = cv2.getTrackbarPos("x2", "ROI")
-        vision_config.y2 = cv2.getTrackbarPos("y2", "ROI")
+        vision_config.X1 = cv2.getTrackbarPos("X1", "ROI")
+        vision_config.Y1 = cv2.getTrackbarPos("Y1", "ROI")
+        vision_config.X2 = cv2.getTrackbarPos("X2", "ROI")
+        vision_config.Y2 = cv2.getTrackbarPos("Y2", "ROI")
 
         roi_frame = apply_ROI(frame)
 
         cv2.imshow("ROI", roi_frame)
 
         # Break the loop when 'ESC' key is pressed
-        key = cv2.waitKey(100)
+        key = cv2.waitKey(10)
 
         # Exit on ESC (27 is ASCII for ESC)
         if key == 27:
             break
     
-    print("Point 1 and 2 overwritten with")
-    print(f"Point 1: {vision_config.x1},{vision_config.y1}")
-    print(f"Point 2: {vision_config.x2},{vision_config.y2}")
+    print("Point 1 and 2 overwritten with:")
+    print(f"Point 1: {vision_config.X1},{vision_config.Y1}")
+    print(f"Point 2: {vision_config.X2},{vision_config.Y2}")
     print()
 
     cv2.destroyWindow("ROI")
@@ -167,24 +176,33 @@ def calibrate_ROI_points(w, h):
 ###############################################################################
 
 def fetch_frame():
+    global original_frame
+    
     validity = False
 
     # Capturing frame and checking whether it's valid
-    frame = pi_camera.capture_array()
+    original_frame = pi_camera.capture_array()
 
-    if frame is None:
+    if original_frame is None:
         print("Failed to capture frame")
         return None, validity
     
     # Camera interprets colors as RGB, but OpenCV uses BGR, so the color spaces need to be converted
-    frame = cv2.cvtColor(
-        src=frame,
+    original_frame = cv2.cvtColor(
+        src=original_frame,
         code=cv2.COLOR_RGB2BGR
+    )
+
+    # Resize the original frame to the dimensions specified in vision_config for processing
+    resized_frame = cv2.resize(
+        original_frame,
+        (vision_config.PROCESSING_WIDTH, vision_config.PROCESSING_HEIGHT),
+        interpolation=cv2.INTER_AREA
     )
 
     validity = True
 
-    return frame, validity
+    return resized_frame, validity
 
 
 ###############################################################################
@@ -195,7 +213,7 @@ def fetch_frame():
 def detect_lanes(frame):
     global filtered_frame
     global frame_edges
-    global masked_edges
+    global roi_edges
 
     # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. 
     # The larger the kernel size, the more blurred the image will be.
@@ -213,22 +231,26 @@ def detect_lanes(frame):
         )
 
     # Edges that are within the ROI
-    masked_edges = apply_ROI(frame_edges)
+    roi_edges = apply_ROI(frame_edges)
 
-    # # Connect dashed lane markings by filling small gaps in edges
-    # MORPH_KERNEL_SIZE = 3
-    # kernel = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE), np.uint8)
-    # masked_edges = cv2.morphologyEx(
-    #     src=masked_edges,
-    #     op=cv2.MORPH_CLOSE,
-    #     kernel=kernel
-    # )
+    # Connect dashed lane markings by filling small gaps in edges
+    kernel = np.ones((vision_config.MORPH_KERNEL_SIZE, vision_config.MORPH_KERNEL_SIZE), np.uint8)
+    roi_edges = cv2.morphologyEx(
+        src=roi_edges,
+        op=cv2.MORPH_CLOSE,
+        kernel=kernel
+    )
 
     # Fetches straight line segments from edges of frame
-    hough_lines = hough_transform(masked_edges)
+    hough_lines = hough_transform(roi_edges)
 
     # Filter out lines that have non ideal slopes
-    left_lane, right_lane = filter_lines(hough_lines, vision_config.MIN_SLOPE, vision_config.MAX_SLOPE, h)
+    left_lane, right_lane = filter_lines(
+        hough_lines=hough_lines, 
+        min_slope=vision_config.MIN_SLOPE, 
+        max_slope=vision_config.MAX_SLOPE, 
+        frame_height=vision_config.PROCESSING_HEIGHT,
+    )
 
     # Apply an EMA to the left and right lane objects to smooth out the lane detection over time
     averaged_left_lane, averaged_right_lane = average_left_and_right_lanes(left_lane, right_lane)
@@ -236,7 +258,6 @@ def detect_lanes(frame):
     # Draw lines and overly onto input frame
     lanes_on_frame = draw_lines_on_frame(
         frame=frame,
-        edges_frame=masked_edges,
         lines=[averaged_left_lane, averaged_right_lane]
         )
     
@@ -257,30 +278,26 @@ def apply_ROI(frame_edges):
     """
 
     # Fetching global variables for ROI points and dimensions of frame
-    x1, y1, x2, y2 = vision_config.x1, vision_config.y1, vision_config.x2, vision_config.y2
-
-    # Dimensions of image
-    h = frame_edges.shape[0]
-    w = frame_edges.shape[1]
+    X1, Y1, X2, Y2 = vision_config.X1, vision_config.Y1, vision_config.X2, vision_config.Y2
 
     # Coordinates of the vertices for the polygon that will be used as the ROI for lanes only.
-    x3 = 0
-    y3 = h
+    X3 = 0
+    Y3 = vision_config.PROCESSING_HEIGHT
 
-    x4 = w
-    y4 = h
+    X4 = vision_config.PROCESSING_WIDTH
+    Y4 = vision_config.PROCESSING_HEIGHT
 
     # Define the vertices of the polygon that will be used to mask the ROI
     vertices = np.array([[
-        (x1, y1),
-        (x2, y2),
-        (x4, y4),
-        (x3, y3)
+        (X1, Y1),
+        (X2, Y2),
+        (X4, Y4),
+        (X3, Y3)
     ]], dtype=np.int32)
 
     # Create a black image of the same size as the edge-detected image
-    roi = np.zeros((h, w), dtype=np.uint8)
-    
+    roi = np.zeros((vision_config.PROCESSING_HEIGHT, vision_config.PROCESSING_WIDTH), dtype=np.uint8)
+
     # Fill the region inside the vertices with white (255).
     cv2.fillPoly(
         img=roi, 
@@ -348,10 +365,27 @@ def hough_transform(masked_edges):
 def filter_lines(lines, min_slope, max_slope, frame_height):
     global last_left_lane
     global last_right_lane
+    global left_lane_missing_count
+    global right_lane_missing_count
 
     # No lines found from Hough transform
+    # Should keep using the last known good lanes for a few frames before resetting and looking for new lanes again
     if lines is None:
-        return (None, None)
+        if last_left_lane is not None:
+            left_lane_missing_count += 1
+
+        if left_lane_missing_count > vision_config.MAX_MISSED_FRAMES:
+            last_left_lane = None
+            left_lane_missing_count = 0
+
+        if last_right_lane is not None:
+            right_lane_missing_count += 1
+
+        if right_lane_missing_count > vision_config.MAX_MISSED_FRAMES:
+            last_right_lane = None
+            right_lane_missing_count = 0
+            
+        return (last_left_lane, last_right_lane)
     
     left_lines_slope = []
     left_lines_intercept = []
@@ -419,14 +453,34 @@ def filter_lines(lines, min_slope, max_slope, frame_height):
 
         right_lane = (x_bottom, y_bottom, x_top, y_top)
     
-    # Filtered left and right lanes are valid
+     # Left lane updating to keep last detected lane for a few frames if no new lanes are found before resetting and looking for new lanes again
     if left_lane is not None:
-        # Update last known good left and right lanes
         last_left_lane = left_lane
+        left_lane_missing_count = 0
+    else:
+        if last_left_lane is not None:
+            left_lane_missing_count += 1
 
+        if left_lane_missing_count > vision_config.MAX_MISSED_FRAMES:
+            last_left_lane = None
+            left_lane_missing_count = 0
+
+        left_lane = last_left_lane
+
+     # Right lane updating to keep last detected lane for a few frames if no new lanes are found before resetting and looking for new lanes again
     if right_lane is not None:
         last_right_lane = right_lane
-    
+        right_lane_missing_count = 0
+    else:
+        if last_right_lane is not None:
+            right_lane_missing_count += 1
+
+        if right_lane_missing_count > vision_config.MAX_MISSED_FRAMES:
+            last_right_lane = None
+            right_lane_missing_count = 0
+
+        right_lane = last_right_lane
+
     return (left_lane, right_lane)
 
 
@@ -453,6 +507,8 @@ def average_left_and_right_lanes(left_lane, right_lane):
             averaged_left_lane = left_lane_np
 
         running_average_left_lane = averaged_left_lane
+    elif running_average_left_lane is not None:
+        averaged_left_lane = running_average_left_lane
     else:
         running_average_left_lane = None
 
@@ -465,6 +521,8 @@ def average_left_and_right_lanes(left_lane, right_lane):
             averaged_right_lane = right_lane_np
 
         running_average_right_lane = averaged_right_lane
+    elif running_average_right_lane is not None:
+        averaged_right_lane = running_average_right_lane
     else:
         running_average_right_lane = None
 
@@ -482,10 +540,11 @@ def average_left_and_right_lanes(left_lane, right_lane):
 # Description: 
 ###############################################################################
 
-def draw_lines_on_frame(frame, edges_frame, lines):
+def draw_lines_on_frame(frame, lines):
     # Create a blank RGB image to draw the Hough line segments
+
     line_image = np.zeros(
-        shape=(h, w, 3), 
+        shape=(vision_config.PROCESSING_HEIGHT, vision_config.PROCESSING_WIDTH, 3),
         dtype=np.uint8
         )
 
@@ -525,16 +584,17 @@ def determine_movement(left_lane, right_lane):
         motor_control.stop_motors()
         return
 
-    frame_center_x = w / 2
+    frame_center_x = vision_config.PROCESSING_WIDTH / 2
+    estimated_half_lane_width = vision_config.PROCESSING_WIDTH * 0.25
 
     if left_lane is not None and right_lane is not None:
         # Average the x-coordinates of the bottom endpoints of the left and right lanes to get the lane center
         lane_center_x = int((left_lane[0] + right_lane[0]) / 2)
     elif left_lane is not None:
         # If only the left lane is detected, assume the lane center is a fixed distance to the right of the left lane
-        lane_center_x = left_lane[0] + 160
+        lane_center_x = left_lane[0] + estimated_half_lane_width
     else:
-        lane_center_x = right_lane[0] - 160
+        lane_center_x = right_lane[0] - estimated_half_lane_width
 
     error = lane_center_x - frame_center_x
 
