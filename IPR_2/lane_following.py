@@ -11,7 +11,6 @@ import motor_control
 import cv2
 import numpy as np
 import picamera2
-import time
 
 # Pi Camera object
 pi_camera = None
@@ -425,7 +424,6 @@ def filter_lines(lines, min_slope, max_slope, frame_height):
                     right_lines_slope.append(slope)
                     right_lines_intercept.append(intercept)
     
-
     # Creating two lines (one left and one right) based on the many lines 
     # Averaging the slopes and using the starting intercepts to start drawing lines.
 
