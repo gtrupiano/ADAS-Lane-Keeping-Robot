@@ -3,16 +3,28 @@
 # Description: Constants for the vision module
 ###############################################################################
 
+###############################################################################
+# IMPORTS
+###############################################################################
+
 # Library Imports
 import numpy as np
 
+
+###############################################################################
+# CONSTANTS
+###############################################################################
+
 # Camera Parameters
+# Resolution camera is set to capture at
 CAMERA_WIDTH = 1280
 CAMERA_HEIGHT = 720
 
+# Resolution that the image will be resized to for processing (to speed up processing)
 PROCESSING_WIDTH = 640
 PROCESSING_HEIGHT = 360
 
+# Whether to display debug frames (e.g., edge detection, lane markings) during processing
 SHOW_DEBUG_FRAMES = False
 
 # EMA smoothing factor
@@ -27,7 +39,7 @@ Y2 = 260
 
 # Filtering parameters
 # Gaussian blur parameters
-BLUR_KERNEL_SIZE = 5
+BLUR_KERNEL_SIZE = 5 # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. The larger the kernel size, the more blurred the image will be.
 SIGMA_BLUR_CONTROL = 0
 
 # Morphological operation parameters
@@ -49,8 +61,9 @@ MIN_SLOPE = 0.5
 MAX_SLOPE = 2.5
 
 # Lane tracking parameters
-# Will allow the system to keep using the last known good lane lines for up to this many consecutive frames without finding new lines before it resets and starts looking for new lanes again.
+# Maximum number of consecutive frames a lane can be missed before it's considered lost
 MAX_MISSED_FRAMES = 3 
 
-# Centering parameters
+# Centering parameter
+# Threshold for determining if the vehicle is centered in the lane (in pixels)
 CENTER_THRESHOLD = 200

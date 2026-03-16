@@ -1,9 +1,19 @@
 ###############################################################################
 # File Name: motor_control_config.py
-# Description: Constants for the motor control module
+# Description: Constants for the motor control module.
 ###############################################################################
 
+###############################################################################
+# IMPORTS
+###############################################################################
+
+# Library Imports
 from enum import Enum
+
+
+###############################################################################
+# CONSTANTS
+###############################################################################
 
 MOTOR_CONTROLLER_I2C_ADDRESS = 0x40
 MOTOR_CONTROLLER_PWM_FREQUENCY = 50 #Hz
@@ -24,6 +34,11 @@ FORWARD_PWM_DUTY = 1500
 TURN_PWM_DUTY = 1000
 STOP_PWM_DUTY = 0
 MOTOR_CONTROLLER_MAX_PWM_DUTY = 4095
+
+
+###############################################################################
+# CLASS DEFINITIONS
+###############################################################################
 
 # Motor controller constants
 class Direction_t(Enum):

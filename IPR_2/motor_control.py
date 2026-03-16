@@ -1,6 +1,10 @@
 ###############################################################################
 # File Name: motor_control.py
-# Description: 
+# Description: Functions for controlling the motors of the car
+###############################################################################
+
+###############################################################################
+# IMPORTS
 ###############################################################################
 
 # File Imports
@@ -9,12 +13,22 @@ import motor_control_config
 # Library Imports
 import Freenove_Libraries.pca9685 as pca9685
 
+
+###############################################################################
+# GLOBAL VARIABLES
+###############################################################################
+
 motor_controller = None
 
 
 ###############################################################################
+# GLOBAL FUNCTIONS
+###############################################################################
+
+###############################################################################
 # Function Name: setup_motor_controller
-# Description: 
+# Description: Initializes the motor controller with the correct I2C address 
+#              and PWM frequency.
 ###############################################################################
 
 def setup_motor_controller():
@@ -25,7 +39,7 @@ def setup_motor_controller():
 
 ###############################################################################
 # Function Name: move_forward
-# Description: 
+# Description: Moves the car forward at the predefined forward PWM duty cycle.
 ###############################################################################
 
 def move_forward():
@@ -34,7 +48,7 @@ def move_forward():
 
 ###############################################################################
 # Function Name: move_backward
-# Description: 
+# Description: Moves the car backward at the predefined backward PWM duty cycle.
 ###############################################################################
 
 def move_backward():
@@ -43,7 +57,7 @@ def move_backward():
 
 ###############################################################################
 # Function Name: turn_left
-# Description: 
+# Description: Turns the car left at the predefined turn PWM duty cycle.
 ###############################################################################
 
 def turn_left():
@@ -52,7 +66,7 @@ def turn_left():
 
 ###############################################################################
 # Function Name: turn_right
-# Description: 
+# Description: Turns the car right at the predefined turn PWM duty cycle.
 ###############################################################################
 
 def turn_right():
@@ -61,7 +75,7 @@ def turn_right():
 
 ###############################################################################
 # Function Name: stop_motors
-# Description: 
+# Description: Stops all motors.
 ###############################################################################
 
 def stop_motors():
@@ -70,7 +84,7 @@ def stop_motors():
 
 ###############################################################################
 # Function Name: shutdown_motors
-# Description: 
+# Description: Stops all motors and shuts down the motor controller.
 ###############################################################################
 
 def shutdown_motors():
@@ -80,7 +94,8 @@ def shutdown_motors():
 
 ###############################################################################
 # Function Name: motor_move_in_direction
-# Description: 
+# Description: Moves the car in the specified direction at the predefined PWM
+#              duty cycle for that direction.
 ###############################################################################
 
 def motor_move_in_direction(direction):
@@ -136,7 +151,7 @@ def motor_move_in_direction(direction):
 
 ###############################################################################
 # Function Name: set_all_motors
-# Description: 
+# Description: Sets the PWM duty cycle for all motors.
 ###############################################################################
 
 def set_all_motors(duty_left_top, duty_left_bottom, duty_right_top, duty_right_bottom):
@@ -167,7 +182,7 @@ def set_all_motors(duty_left_top, duty_left_bottom, duty_right_top, duty_right_b
 
 ###############################################################################
 # Function Name: set_motor
-# Description: 
+# Description: Sets the PWM duty cycle for a single motor based on the specified duty.
 ###############################################################################
 
 def set_motor(in1_chnl, in2_chnl, duty):

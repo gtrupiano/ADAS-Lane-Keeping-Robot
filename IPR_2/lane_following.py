@@ -1,6 +1,10 @@
 ###############################################################################
 # File Name: lane_following.py
-# Description: 
+# Description: Main application logic for the lane following algorithm.
+###############################################################################
+
+###############################################################################
+# IMPORTS
 ###############################################################################
 
 # File Imports
@@ -11,6 +15,11 @@ import motor_control
 import cv2
 import numpy as np
 import picamera2
+
+
+###############################################################################
+# GLOBAL VARIABLES
+###############################################################################
 
 # Pi Camera object
 pi_camera = None
@@ -35,6 +44,17 @@ frame_edges = None
 roi_edges = None
 lanes_on_frame = None
 
+
+###############################################################################
+# GLOBAL FUNCTIONS
+###############################################################################
+
+
+###############################################################################
+# Function Name: main
+# Description: Application level logic for the lane following algorithm.
+###############################################################################
+
 def main():
     global original_frame
     global resized_frame
@@ -47,6 +67,7 @@ def main():
 
     motor_control.setup_motor_controller()
     
+    # Capturing input on whether user wants to calibrate the ROI points or not before starting the main loop for lane detection and movement control
     roi_calibration_input = input("Calibrate ROI points (Yes / No)")
     roi_calibration_input = roi_calibration_input.lower()
 
@@ -55,12 +76,15 @@ def main():
         roi_calibration_input = input("Invalid input. Calibrate ROI points (Yes / No)")
         roi_calibration_input = roi_calibration_input.lower()
 
+    # Go into ROI calibration if user input is "yes".
     if roi_calibration_input.lower() == "yes":
         calibrate_ROI_points()
 
+    # Main loop for lane detection and movement control
     while True:
         resized_frame, validity = fetch_frame()
 
+        # Checks whether the capturing of the frame was successful. If not, exits the loop since the camera is not working.
         if validity is False:
             break
         
@@ -82,7 +106,6 @@ def main():
             cv2.imshow('Resized Frame', resized_frame)
             cv2.imshow('Lanes', lanes_on_frame)
 
-
         # Break the loop when 'ESC' key is pressed
         key = cv2.waitKey(10)
 
@@ -95,12 +118,14 @@ def main():
 
 ###############################################################################
 # Function Name: configure_camera
-# Description: 
+# Description: Configures the Pi Camera to capture frames at the resolution 
+#              specified in vision_config and starts the camera.
 ###############################################################################
 
 def configure_camera():
     global pi_camera
     
+    # Creating and configuring Pi Camera to capture at the resolution specified in vision_config
     pi_camera  = picamera2.Picamera2()
     pi_camera.configure(
         pi_camera.create_preview_configuration(
@@ -110,18 +135,27 @@ def configure_camera():
             }
         )
     )
+
+    # Allowing the camera to start capturing frames to see if it is valid.
     pi_camera.start()
 
-    # Capturing frame and checking whether it's valid
-    frame = pi_camera.capture_array()
-    if frame is None:
+    # Resizes and fetches the first frame
+    frame, validity = fetch_frame()
+
+    # Checks whether the capturing of the frame was successful. If not, exits the program since the camera is not working.
+    if validity is False:
         print("Failed to capture frame")
         exit()
 
 
 ###############################################################################
 # Function Name: calibrate_ROI_points
-# Description: 
+# Description: Allows the user to calibrate the ROI points by displaying a 
+#              window with trackbars for each of the four points that define 
+#              the ROI. The user can adjust the trackbars while viewing the 
+#              resulting ROI in real time until they are satisfied with 
+#              the placement of the ROI, at which point they can press the ESC
+#              key to save those points and exit the calibration window.
 ###############################################################################
 
 def calibrate_ROI_points():
@@ -129,8 +163,10 @@ def calibrate_ROI_points():
     def null(x):
         pass
 
+    # Create a window for the trackbars to be displayed in
     cv2.namedWindow("ROI")
 
+    # Creating trackbars for the ROI points
     # arguments: trackbar_name, window_name, default_value, max_value, callback_fn
     cv2.createTrackbar("X1", "ROI", vision_config.X1, vision_config.PROCESSING_WIDTH, null)
     cv2.createTrackbar("Y1", "ROI", vision_config.Y1, vision_config.PROCESSING_HEIGHT, null)
@@ -138,9 +174,12 @@ def calibrate_ROI_points():
     cv2.createTrackbar("X2", "ROI", vision_config.X2, vision_config.PROCESSING_WIDTH, null)
     cv2.createTrackbar("Y2", "ROI", vision_config.Y2, vision_config.PROCESSING_HEIGHT, null)
 
+    # Loop to continuously update the ROI frame based on the trackbar positions
     while True:
+        # Resizes and fetches the current frame
         frame, validity = fetch_frame()
 
+        # Checks whether the capturing of the frame was successful. If not, exits the program since the camera is not working.
         if validity is False:
             break
 
@@ -150,6 +189,7 @@ def calibrate_ROI_points():
         vision_config.X2 = cv2.getTrackbarPos("X2", "ROI")
         vision_config.Y2 = cv2.getTrackbarPos("Y2", "ROI")
 
+        # Applying the ROI mask to the current frame to show the user how the ROI looks in real time as they adjust the trackbars
         roi_frame = apply_ROI(frame)
 
         cv2.imshow("ROI", roi_frame)
@@ -161,6 +201,8 @@ def calibrate_ROI_points():
         if key == 27:
             break
     
+    # Prints the ROI points that were set by the user
+    # NOTE: These points will need to be manually updated in vision_config.py if the user wants to use those same points in future runs
     print("Point 1 and 2 overwritten with:")
     print(f"Point 1: {vision_config.X1},{vision_config.Y1}")
     print(f"Point 2: {vision_config.X2},{vision_config.Y2}")
@@ -171,7 +213,7 @@ def calibrate_ROI_points():
 
 ###############################################################################
 # Function Name: fetch_frame
-# Description: 
+# Description: Fetches a frame from the Pi Camera and resizes it for processing.
 ###############################################################################
 
 def fetch_frame():
@@ -182,6 +224,7 @@ def fetch_frame():
     # Capturing frame and checking whether it's valid
     original_frame = pi_camera.capture_array()
 
+    # Checks whether the capturing of the frame was successful. If not, returns None and False for validity since the camera is not working.
     if original_frame is None:
         print("Failed to capture frame")
         return None, validity
@@ -206,7 +249,9 @@ def fetch_frame():
 
 ###############################################################################
 # Function Name: detect_lanes
-# Description: 
+# Description: Detects lanes in the input frame and returns a frame with
+#              the detected lanes drawn on it, as well as the coordinates 
+#              of the left and right lanes.
 ###############################################################################
 
 def detect_lanes(frame):
@@ -214,8 +259,7 @@ def detect_lanes(frame):
     global frame_edges
     global roi_edges
 
-    # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. 
-    # The larger the kernel size, the more blurred the image will be.
+    # Blurs the image to reduce noise for better edge detection results
     filtered_frame = cv2.GaussianBlur(
         src=frame, 
         ksize=(vision_config.BLUR_KERNEL_SIZE, vision_config.BLUR_KERNEL_SIZE),
@@ -223,13 +267,14 @@ def detect_lanes(frame):
         sigmaY=vision_config.SIGMA_BLUR_CONTROL
         )
 
+    # Detects edges in the blurred image using Canny edge detection
     frame_edges = cv2.Canny(
         image=filtered_frame, 
         threshold1=vision_config.CANNY_LOW_THRESHOLD,
         threshold2=vision_config.CANNY_HIGH_THRESHOLD
         )
 
-    # Edges that are within the ROI
+    # Applies edges that are within ROI
     roi_edges = apply_ROI(frame_edges)
 
     # Connect dashed lane markings by filling small gaps in edges
@@ -265,7 +310,7 @@ def detect_lanes(frame):
 
 ###############################################################################
 # Function Name: apply_ROI
-# Description: 
+# Description: Applies a Region of Interest (ROI) mask to the edge-detected frame.
 ###############################################################################
 
 def apply_ROI(frame_edges):
@@ -426,13 +471,11 @@ def filter_lines(lines, min_slope, max_slope, frame_height):
     
     # Creating two lines (one left and one right) based on the many lines 
     # Averaging the slopes and using the starting intercepts to start drawing lines.
-
     y_bottom = frame_height
     y_top = int(frame_height * 0.62)
 
     # Finding average of slopes and intercepts for both right and left lines
     # The constructing left and right lines based on those averages.
-
     if left_lines_slope:
         m_avg = np.median(left_lines_slope)
         b_avg = np.median(left_lines_intercept)
@@ -496,6 +539,7 @@ def average_left_and_right_lanes(left_lane, right_lane):
     averaged_left_lane = None
     averaged_right_lane = None
     
+    # Applying an EMA to the left lane
     if left_lane is not None:
         left_lane_np = np.array(left_lane, dtype=np.float32)
 
@@ -510,6 +554,7 @@ def average_left_and_right_lanes(left_lane, right_lane):
     else:
         running_average_left_lane = None
 
+    # Applying an EMA to the right lane
     if right_lane is not None:
         right_lane_np = np.array(right_lane, dtype=np.float32)
 
@@ -524,6 +569,7 @@ def average_left_and_right_lanes(left_lane, right_lane):
     else:
         running_average_right_lane = None
 
+    # Converting the averaged lanes back to tuples of integers for drawing on the frame
     if averaged_left_lane is not None:
         averaged_left_lane = tuple(averaged_left_lane.astype(int))
 
@@ -535,7 +581,7 @@ def average_left_and_right_lanes(left_lane, right_lane):
 
 ###############################################################################
 # Function Name: draw_lines_on_frame
-# Description: 
+# Description: Draws the detected lane lines on the input frame
 ###############################################################################
 
 def draw_lines_on_frame(frame, lines):
@@ -573,7 +619,8 @@ def draw_lines_on_frame(frame, lines):
 
 ###############################################################################
 # Function Name: determine_movement
-# Description: 
+# Description: Determines the direction of movement based on the position
+#              of the detected lanes.
 ###############################################################################
 
 def determine_movement(left_lane, right_lane):
@@ -582,6 +629,7 @@ def determine_movement(left_lane, right_lane):
         motor_control.stop_motors()
         return
 
+    # Calculate the center of the frame and the center of the lane to determine the error
     frame_center_x = vision_config.PROCESSING_WIDTH / 2
     estimated_half_lane_width = vision_config.PROCESSING_WIDTH * 0.25
 
@@ -594,8 +642,10 @@ def determine_movement(left_lane, right_lane):
     else:
         lane_center_x = right_lane[0] - estimated_half_lane_width
 
+    # Calculate the error between the lane center and the frame center
     error = lane_center_x - frame_center_x
 
+    # Determine movement based on the error and a threshold to avoid over-correcting for small errors
     if error < -vision_config.CENTER_THRESHOLD:
         motor_control.turn_left()
     elif error > vision_config.CENTER_THRESHOLD:
@@ -606,15 +656,18 @@ def determine_movement(left_lane, right_lane):
 
 ###############################################################################
 # Function Name: shutdown_peripherals
-# Description: 
+# Description: Shuts down all peripherals and cleans up resources.
 ###############################################################################
 
 def shutdown_peripherals():
+    # Stopping the camera and closing it
     pi_camera.stop()
     pi_camera.close()
 
+    # Stopping the motors and closing the motor controller
     motor_control.shutdown_motors()
 
+    # Closing all OpenCV windows
     cv2.destroyAllWindows()
 
 
