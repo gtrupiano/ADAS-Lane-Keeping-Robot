@@ -31,11 +31,11 @@ SHOW_DEBUG_FRAMES = False
 ALPHA = 0.15
 
 # Default ROI points (these will be overwritten if calibration is enabled)
-X1 = 180
-Y1 = 260
+X1 = 112
+Y1 = 157
 
-X2 = 460
-Y2 = 260
+X2 = 573
+Y2 = 158
 
 # Filtering parameters
 # Gaussian blur parameters
@@ -66,4 +66,4 @@ MAX_MISSED_FRAMES = 3
 
 # Centering parameter
 # Threshold for determining if the vehicle is centered in the lane (in pixels)
-CENTER_THRESHOLD = 200
+CENTER_THRESHOLD = 64

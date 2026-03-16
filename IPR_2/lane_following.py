@@ -230,10 +230,10 @@ def fetch_frame():
         return None, validity
     
     # Camera interprets colors as RGB, but OpenCV uses BGR, so the color spaces need to be converted
-    original_frame = cv2.cvtColor(
-        src=original_frame,
-        code=cv2.COLOR_RGB2BGR
-    )
+    # original_frame = cv2.cvtColor(
+    #     src=original_frame,
+    #     code=cv2.COLOR_RGB2BGR
+    # )
 
     # Resize the original frame to the dimensions specified in vision_config for processing
     resized_frame = cv2.resize(
@@ -290,7 +290,7 @@ def detect_lanes(frame):
 
     # Filter out lines that have non ideal slopes
     left_lane, right_lane = filter_lines(
-        hough_lines=hough_lines, 
+        lines=hough_lines, 
         min_slope=vision_config.MIN_SLOPE, 
         max_slope=vision_config.MAX_SLOPE, 
         frame_height=vision_config.PROCESSING_HEIGHT,
