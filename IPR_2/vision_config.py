@@ -17,8 +17,8 @@ import numpy as np
 
 # Camera Parameters
 # Resolution camera is set to capture at
-CAMERA_WIDTH = 1280
-CAMERA_HEIGHT = 720
+CAMERA_WIDTH = 3840
+CAMERA_HEIGHT = 2160
 
 # Resolution that the image will be resized to for processing (to speed up processing)
 PROCESSING_WIDTH = 640
@@ -31,11 +31,11 @@ SHOW_DEBUG_FRAMES = False
 ALPHA = 0.15
 
 # Default ROI points (these will be overwritten if calibration is enabled)
-X1 = 112
-Y1 = 157
+X1 = 134
+Y1 = 188
 
 X2 = 573
-Y2 = 158
+Y2 = 194
 
 # Filtering parameters
 # Gaussian blur parameters
@@ -46,7 +46,7 @@ SIGMA_BLUR_CONTROL = 0
 MORPH_KERNEL_SIZE = 3 # Size of the kernel used for morphological operations (e.g., closing to connect dashed lane markings)
 
 # Canny edge detection thresholds
-CANNY_LOW_THRESHOLD = 50
+CANNY_LOW_THRESHOLD = 30
 CANNY_HIGH_THRESHOLD = 150
 
 # Hough transform parameters
@@ -58,7 +58,7 @@ HOUGH_MAX_LINE_GAP = 200 # Maximum allowed gap between line segments that can be
 
 # Lane filtering parameters
 MIN_SLOPE = 0.5
-MAX_SLOPE = 2.5
+MAX_SLOPE = 3.5
 
 # Lane tracking parameters
 # Maximum number of consecutive frames a lane can be missed before it's considered lost
@@ -66,4 +66,4 @@ MAX_MISSED_FRAMES = 3
 
 # Centering parameter
 # Threshold for determining if the vehicle is centered in the lane (in pixels)
-CENTER_THRESHOLD = 64
+CENTER_THRESHOLD = 35

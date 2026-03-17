@@ -87,7 +87,7 @@ def main():
         # Checks whether the capturing of the frame was successful. If not, exits the loop since the camera is not working.
         if validity is False:
             break
-        
+
         # Detecting lanes and drawing them on the original frame
         lanes_on_frame, left_lane, right_lane = detect_lanes(resized_frame)
 
@@ -107,7 +107,7 @@ def main():
             cv2.imshow('Lanes', lanes_on_frame)
 
         # Break the loop when 'ESC' key is pressed
-        key = cv2.waitKey(10)
+        key = cv2.waitKey(1)
 
         # Exit on ESC (27 is ASCII for ESC)
         if key == 27:
@@ -259,9 +259,16 @@ def detect_lanes(frame):
     global frame_edges
     global roi_edges
 
+    gray_frame = cv2.cvtColor(
+        src=resized_frame,
+        code=cv2.COLOR_BGR2GRAY
+    )
+
+    gray_frame[gray_frame > 220] = 0
+
     # Blurs the image to reduce noise for better edge detection results
     filtered_frame = cv2.GaussianBlur(
-        src=frame, 
+        src=gray_frame, 
         ksize=(vision_config.BLUR_KERNEL_SIZE, vision_config.BLUR_KERNEL_SIZE),
         sigmaX=vision_config.SIGMA_BLUR_CONTROL,
         sigmaY=vision_config.SIGMA_BLUR_CONTROL
@@ -494,6 +501,11 @@ def filter_lines(lines, min_slope, max_slope, frame_height):
 
         right_lane = (x_bottom, y_bottom, x_top, y_top)
     
+    if left_lane is not None and right_lane is not None:
+        if left_lane[0] >= right_lane[0]:
+            left_lane = None
+            right_lane = None
+
      # Left lane updating to keep last detected lane for a few frames if no new lanes are found before resetting and looking for new lanes again
     if left_lane is not None:
         last_left_lane = left_lane
@@ -549,10 +561,9 @@ def average_left_and_right_lanes(left_lane, right_lane):
             averaged_left_lane = left_lane_np
 
         running_average_left_lane = averaged_left_lane
-    elif running_average_left_lane is not None:
-        averaged_left_lane = running_average_left_lane
     else:
         running_average_left_lane = None
+        averaged_left_lane = None
 
     # Applying an EMA to the right lane
     if right_lane is not None:
@@ -564,10 +575,9 @@ def average_left_and_right_lanes(left_lane, right_lane):
             averaged_right_lane = right_lane_np
 
         running_average_right_lane = averaged_right_lane
-    elif running_average_right_lane is not None:
-        averaged_right_lane = running_average_right_lane
     else:
         running_average_right_lane = None
+        averaged_right_lane = None
 
     # Converting the averaged lanes back to tuples of integers for drawing on the frame
     if averaged_left_lane is not None:
@@ -624,28 +634,29 @@ def draw_lines_on_frame(frame, lines):
 ###############################################################################
 
 def determine_movement(left_lane, right_lane):
-    # If no lanes are detected, stop the motors and wait for the next frame
+    # If no lanes are detected, stop and wait for the next frame
     if left_lane is None and right_lane is None:
         motor_control.stop_motors()
         return
 
-    # Calculate the center of the frame and the center of the lane to determine the error
+    # If only one lane is detected, commit to that recovery action and return
+    # This prevents later logic from overriding the turn command in the same frame
+    if left_lane is not None and right_lane is None:
+        motor_control.turn_right()   # only left lane seen -> car is likely too far left
+        return
+
+    if right_lane is not None and left_lane is None:
+        motor_control.turn_left()    # only right lane seen -> car is likely too far right
+        return
+
+    # Both lanes exist, so now compute lane center normally
     frame_center_x = vision_config.PROCESSING_WIDTH / 2
-    estimated_half_lane_width = vision_config.PROCESSING_WIDTH * 0.25
+    lane_center_x = int((left_lane[0] + right_lane[0]) / 2)
 
-    if left_lane is not None and right_lane is not None:
-        # Average the x-coordinates of the bottom endpoints of the left and right lanes to get the lane center
-        lane_center_x = int((left_lane[0] + right_lane[0]) / 2)
-    elif left_lane is not None:
-        # If only the left lane is detected, assume the lane center is a fixed distance to the right of the left lane
-        lane_center_x = left_lane[0] + estimated_half_lane_width
-    else:
-        lane_center_x = right_lane[0] - estimated_half_lane_width
-
-    # Calculate the error between the lane center and the frame center
+    # Positive error means lane center is to the right of image center
     error = lane_center_x - frame_center_x
 
-    # Determine movement based on the error and a threshold to avoid over-correcting for small errors
+    # Steering correction when both lanes are visible
     if error < -vision_config.CENTER_THRESHOLD:
         motor_control.turn_left()
     elif error > vision_config.CENTER_THRESHOLD:
