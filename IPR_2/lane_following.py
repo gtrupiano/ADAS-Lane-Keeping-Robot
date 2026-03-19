@@ -656,6 +656,8 @@ def determine_movement(left_lane, right_lane):
     # Positive error means lane center is to the right of image center
     error = lane_center_x - frame_center_x
 
+    print(error)
+
     # Steering correction when both lanes are visible
     if error < -vision_config.CENTER_THRESHOLD:
         motor_control.turn_left()

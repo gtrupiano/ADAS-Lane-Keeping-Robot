@@ -118,8 +118,8 @@ def motor_move_in_direction(direction):
 
         case motor_control_config.Direction_t.LEFT:
             set_all_motors(
-                duty_left_top= -motor_control_config.TURN_LOW_PWM_DUTY, # May change to STOP_PWM_DUTY for more gentle turn
-                duty_left_bottom= -motor_control_config.TURN_LOW_PWM_DUTY, # May change to STOP_PWM_DUTY for more gentle turn
+                duty_left_top= motor_control_config.TURN_LOW_PWM_DUTY,
+                duty_left_bottom= motor_control_config.TURN_LOW_PWM_DUTY,
                 duty_right_top= motor_control_config.TURN_HIGH_PWM_DUTY, 
                 duty_right_bottom= motor_control_config.TURN_HIGH_PWM_DUTY
             ) 
@@ -128,8 +128,8 @@ def motor_move_in_direction(direction):
             set_all_motors(
                 duty_left_top= motor_control_config.TURN_HIGH_PWM_DUTY, # May change to STOP_PWM_DUTY for more gentle turn
                 duty_left_bottom= motor_control_config.TURN_HIGH_PWM_DUTY, # May change to STOP_PWM_DUTY for more gentle turn
-                duty_right_top= -motor_control_config.TURN_LOW_PWM_DUTY, 
-                duty_right_bottom= -motor_control_config.TURN_LOW_PWM_DUTY
+                duty_right_top= motor_control_config.TURN_LOW_PWM_DUTY, 
+                duty_right_bottom= motor_control_config.TURN_LOW_PWM_DUTY
             )
 
         case motor_control_config.Direction_t.STOP:
