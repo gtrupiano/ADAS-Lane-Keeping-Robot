@@ -65,12 +65,40 @@ def turn_left():
 
 
 ###############################################################################
+# Function Name: turn_left_at_speed
+# Description: Turns the car left at the predefined turn PWM duty cycle.
+###############################################################################
+
+def turn_left_at_speed(left_pwm_duty, right_pwm_duty):
+    set_all_motors(
+        duty_left_top=left_pwm_duty, 
+        duty_left_bottom=left_pwm_duty, 
+        duty_right_top=right_pwm_duty, 
+        duty_right_bottom=right_pwm_duty
+    )
+
+
+###############################################################################
 # Function Name: turn_right
 # Description: Turns the car right at the predefined turn PWM duty cycle.
 ###############################################################################
 
 def turn_right():
     motor_move_in_direction(motor_control_config.Direction_t.RIGHT)
+
+
+###############################################################################
+# Function Name: turn_right_at_speed
+# Description: Turns the car right at the predefined turn PWM duty cycle.
+###############################################################################
+
+def turn_right_at_speed(left_pwm_duty, right_pwm_duty):
+    set_all_motors(
+        duty_left_top=left_pwm_duty, 
+        duty_left_bottom=left_pwm_duty, 
+        duty_right_top=right_pwm_duty, 
+        duty_right_bottom=right_pwm_duty
+    )
 
 
 ###############################################################################

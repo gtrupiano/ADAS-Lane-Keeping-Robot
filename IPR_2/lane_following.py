@@ -96,7 +96,7 @@ def main():
 
         # Display frames based on whether debug mode is enabled or not
         if vision_config.SHOW_DEBUG_FRAMES:
-            cv2.imshow('Original Frame', original_frame)
+            #cv2.imshow('Original Frame', original_frame)
             cv2.imshow('Resized Frame', resized_frame)
             cv2.imshow('Filtered Frame', filtered_frame)
             cv2.imshow('Edges Frame', frame_edges)
@@ -642,11 +642,11 @@ def determine_movement(left_lane, right_lane):
     # If only one lane is detected, commit to that recovery action and return
     # This prevents later logic from overriding the turn command in the same frame
     if left_lane is not None and right_lane is None:
-        motor_control.turn_right()   # only left lane seen -> car is likely too far left
+        #motor_control.turn_right()   # only left lane seen -> car is likely too far left
         return
 
     if right_lane is not None and left_lane is None:
-        motor_control.turn_left()    # only right lane seen -> car is likely too far right
+        #motor_control.turn_left()    # only right lane seen -> car is likely too far right
         return
 
     # Both lanes exist, so now compute lane center normally
@@ -658,6 +658,15 @@ def determine_movement(left_lane, right_lane):
 
     print(error)
 
+    MAX_ERROR_LEFT = -145
+    MAX_ERROR_RIGHT = 145
+
+    
+    # Turn right
+    if error < 0:
+        
+        pass
+    """
     # Steering correction when both lanes are visible
     if error < -vision_config.CENTER_THRESHOLD:
         motor_control.turn_left()
@@ -665,7 +674,7 @@ def determine_movement(left_lane, right_lane):
         motor_control.turn_right()
     else:
         motor_control.move_forward()
-
+    """
 
 ###############################################################################
 # Function Name: shutdown_peripherals

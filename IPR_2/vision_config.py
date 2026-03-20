@@ -31,11 +31,11 @@ SHOW_DEBUG_FRAMES = False
 ALPHA = 0.15
 
 # Default ROI points (these will be overwritten if calibration is enabled)
-X1 = 134
-Y1 = 188
+X1 = 94
+Y1 = 196
 
-X2 = 573
-Y2 = 194
+X2 = 546
+Y2 = 196
 
 # Filtering parameters
 # Gaussian blur parameters
