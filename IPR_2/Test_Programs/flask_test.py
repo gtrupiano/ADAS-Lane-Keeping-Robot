@@ -3,6 +3,7 @@ from picamera2 import Picamera2
 import cv2
 import time
 
+# PI IP ADDRESS = 192.168.50.206
 
 def main():
     # Create Flask app
