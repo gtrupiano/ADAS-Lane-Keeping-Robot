@@ -685,15 +685,18 @@ def determine_movement(left_lane, right_lane):
         inside_pwm_duty = mcc.STOP_PWM_DUTY
 
 
+    # Negative error means lane center is to the right of frame center
     # Turn right if lane center is to the right of frame center
     # When turning right, then the left motors should be at full speed and the right motors should be slowed down based on the error.
-    if error > 0:
+    if error < 0:
         left_pwm_duty = mcc.BASE_PWM_DUTY
         right_pwm_duty = inside_pwm_duty
         mc.move_at_speed(left_pwm_duty, right_pwm_duty)
 
+    # Positive error means lane center is to the left of frame center
     # Turn left if lane center is to the left of frame center
-    elif error < 0:
+    # When turning left, then the right motors should be at full speed and the left motors should be slowed down based on the error.
+    elif error > 0:
         left_pwm_duty = inside_pwm_duty
         right_pwm_duty = mcc.BASE_PWM_DUTY
         mc.move_at_speed(left_pwm_duty, right_pwm_duty)
