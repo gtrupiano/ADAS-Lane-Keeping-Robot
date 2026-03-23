@@ -42,20 +42,20 @@ motor_controller = None
 def main():
     setup_motor_controller()
 
-    motor_move_in_direction(Direction_t.FORWARD)
-    time.sleep(2)
+    # motor_move_in_direction(Direction_t.FORWARD)
+    # time.sleep(2)
 
-    motor_move_in_direction(Direction_t.BACKWARD)
-    time.sleep(2)
+    # motor_move_in_direction(Direction_t.BACKWARD)
+    # time.sleep(2)
 
-    motor_move_in_direction(Direction_t.LEFT)
-    time.sleep(2)
+    # motor_move_in_direction(Direction_t.LEFT)
+    # time.sleep(2)
 
-    motor_move_in_direction(Direction_t.RIGHT)
-    time.sleep(2)
+    # motor_move_in_direction(Direction_t.RIGHT)
+    # time.sleep(2)
 
-    motor_move_in_direction(Direction_t.STOP)
-    time.sleep(2)
+    # motor_move_in_direction(Direction_t.STOP)
+    # time.sleep(2)
 
     shutdown_motors()
 
