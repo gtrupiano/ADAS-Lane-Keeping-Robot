@@ -11,7 +11,7 @@
 
 # File Imports
 import modules.control.control_config as control_config
-import modules.camera.camera_config as camera_config
+import modules.vision.vision_config as vision_config
 import modules.motor.motor_control as motor_control
 import modules.motor.motor_control_config as motor_control_config
 
@@ -57,7 +57,7 @@ def determine_movement(left_lane, right_lane):
 
 
     # Frame center x coordinent used for ideal allignment of the car.
-    frame_center_x = camera_config.PROCESSING_WIDTH / 2
+    frame_center_x = vision_config.PROCESSING_WIDTH / 2
 
     # Both lanes exist, so now compute lane center normally
     lane_center_x = int((left_lane[0] + right_lane[0]) / 2)
@@ -90,8 +90,8 @@ def determine_movement(left_lane, right_lane):
     inside_pwm_duty = int((1.0 - error_ratio) * motor_control_config.BASE_PWM_DUTY)
 
     # Constraining the minimum PWM duty cycle
-    if inside_pwm_duty < motor_control_config.STOP_PWM_DUTY:
-        inside_pwm_duty = motor_control_config.STOP_PWM_DUTY
+    if inside_pwm_duty < 500:
+        inside_pwm_duty = 500
 
 
     # Negative error means lane center is to the right of frame center
