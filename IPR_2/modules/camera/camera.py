@@ -10,6 +10,7 @@
 
 # File Imports
 import modules.camera.camera_config as camera_config
+import modules.vision.vision_config as vision_config
 
 # Library Imports
 import cv2
@@ -31,13 +32,13 @@ pi_camera = None
 ###############################################################################
 # Function Name: configure_camera
 # Description: Configures the Pi Camera to capture frames at the resolution 
-#              specified in vision_config and starts the camera.
+#              specified in camera_config and starts the camera.
 ###############################################################################
 
 def configure_camera():
     global pi_camera
     
-    # Creating and configuring Pi Camera to capture at the resolution specified in vision_config
+    # Creating and configuring Pi Camera to capture at the resolution specified in camera_config
     pi_camera  = picamera2.Picamera2()
     pi_camera.configure(
         pi_camera.create_preview_configuration(
@@ -79,7 +80,7 @@ def fetch_frame():
     # Resize the original frame to the dimensions specified in vision_config for processing
     resized_frame = cv2.resize(
         original_frame,
-        (camera_config.PROCESSING_WIDTH, camera_config.PROCESSING_HEIGHT),
+        (vision_config.PROCESSING_WIDTH, vision_config.PROCESSING_HEIGHT),
         interpolation=cv2.INTER_AREA
     )
 

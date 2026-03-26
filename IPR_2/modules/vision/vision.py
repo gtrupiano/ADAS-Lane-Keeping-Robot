@@ -11,7 +11,6 @@
 # File Imports
 import modules.vision.vision_config as vision_config
 import modules.camera.camera as camera
-import modules.camera.camera_config as camera_config
 
 # Library Imports
 import cv2
@@ -158,7 +157,7 @@ def detect_lanes(frame):
         lines=hough_lines, 
         min_slope=vision_config.MIN_SLOPE, 
         max_slope=vision_config.MAX_SLOPE, 
-        frame_height=camera_config.PROCESSING_HEIGHT,
+        frame_height=vision_config.PROCESSING_HEIGHT,
     )
 
     # Apply an EMA to the left and right lane objects to smooth out the lane detection over time
@@ -191,10 +190,10 @@ def apply_ROI(frame_edges):
 
     # Coordinates of the vertices for the polygon that will be used as the ROI for lanes only.
     X3 = 0
-    Y3 = camera_config.PROCESSING_HEIGHT
+    Y3 = vision_config.PROCESSING_HEIGHT
 
-    X4 = camera_config.PROCESSING_WIDTH
-    Y4 = camera_config.PROCESSING_HEIGHT
+    X4 = vision_config.PROCESSING_WIDTH
+    Y4 = vision_config.PROCESSING_HEIGHT
 
     # Define the vertices of the polygon that will be used to mask the ROI
     vertices = np.array([[
@@ -205,7 +204,7 @@ def apply_ROI(frame_edges):
     ]], dtype=np.int32)
 
     # Create a black image of the same size as the edge-detected image
-    roi = np.zeros((camera_config.PROCESSING_HEIGHT, camera_config.PROCESSING_WIDTH), dtype=np.uint8)
+    roi = np.zeros((vision_config.PROCESSING_HEIGHT, vision_config.PROCESSING_WIDTH), dtype=np.uint8)
 
     # Fill the region inside the vertices with white (255).
     cv2.fillPoly(
@@ -456,7 +455,7 @@ def draw_lines_on_frame(frame, lines):
     # Create a blank RGB image to draw the Hough line segments
 
     line_image = np.zeros(
-        shape=(camera_config.PROCESSING_HEIGHT, camera_config.PROCESSING_WIDTH, 3),
+        shape=(vision_config.PROCESSING_HEIGHT, vision_config.PROCESSING_WIDTH, 3),
         dtype=np.uint8
         )
 

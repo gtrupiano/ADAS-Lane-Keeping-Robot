@@ -21,7 +21,3 @@
 # Resolution camera is set to capture at
 CAMERA_WIDTH = 3840
 CAMERA_HEIGHT = 2160
-
-# Resolution that the image will be resized to for processing (to speed up processing)
-PROCESSING_WIDTH = 640
-PROCESSING_HEIGHT = 360

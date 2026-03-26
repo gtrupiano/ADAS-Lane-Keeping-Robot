@@ -28,6 +28,10 @@ Y1 = 196
 X2 = 546
 Y2 = 196
 
+# Resolution that the image will be resized to for processing (to speed up processing)
+PROCESSING_WIDTH = 640
+PROCESSING_HEIGHT = 360
+
 # Filtering parameters
 # Gaussian blur parameters
 BLUR_KERNEL_SIZE = 5 # Size of block that goes through each pixel and calculates the weighted average of the surrounding pixels. The larger the kernel size, the more blurred the image will be.
