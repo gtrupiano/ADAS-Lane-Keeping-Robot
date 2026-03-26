@@ -8,7 +8,7 @@
 ###############################################################################
 
 # File Imports
-import motor_control_config
+import modules.motor.motor_control_config as motor_control_config
 
 # Library Imports
 import Freenove_Libraries.pca9685 as pca9685

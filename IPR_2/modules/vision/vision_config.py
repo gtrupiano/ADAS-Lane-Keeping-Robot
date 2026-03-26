@@ -15,15 +15,6 @@ import numpy as np
 # CONSTANTS
 ###############################################################################
 
-# Camera Parameters
-# Resolution camera is set to capture at
-CAMERA_WIDTH = 3840
-CAMERA_HEIGHT = 2160
-
-# Resolution that the image will be resized to for processing (to speed up processing)
-PROCESSING_WIDTH = 640
-PROCESSING_HEIGHT = 360
-
 # Whether to display debug frames (e.g., edge detection, lane markings) during processing
 SHOW_DEBUG_FRAMES = False
 
@@ -63,10 +54,3 @@ MAX_SLOPE = 3.5
 # Lane tracking parameters
 # Maximum number of consecutive frames a lane can be missed before it's considered lost
 MAX_MISSED_FRAMES = 3 
-
-# Centering parameter
-# Threshold for determining if the vehicle is centered in the lane (in pixels)
-MIN_ERROR_THRESHOLD = 30
-
-# Maximum lane center to frame center error (in pixels) for mapping to a PWM duty cycle.
-MAX_LANE_TO_FRAME_CENTER_ERROR = 145.0
