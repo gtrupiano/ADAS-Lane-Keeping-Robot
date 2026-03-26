@@ -261,7 +261,7 @@ def detect_lanes(frame):
     global roi_edges
 
     gray_frame = cv2.cvtColor(
-        src=resized_frame,
+        src=frame,
         code=cv2.COLOR_BGR2GRAY
     )
 
@@ -678,9 +678,17 @@ def determine_movement(left_lane, right_lane):
     # Clamping error ratio to be between 0 and 1 to avoid negative PWM duty cycles or PWM duty cycles that are too high
     if error_ratio > 1.0:
         error_ratio = 1.0
+    elif error_ratio < 0.0:
+        error_ratio = 0.0
 
+    # The inside motors should slow down based on the error ratio.
+    # This means it will be at full speed when the error is 0 
+    # (lane center is perfectly aligned with frame center) and 
+    # will slow down to 0 when the error is at or above the maximum
+    # lane to frame center error.
     inside_pwm_duty = int((1.0 - error_ratio) * mcc.BASE_PWM_DUTY)
 
+    # Constraining the minimum PWM duty cycle
     if inside_pwm_duty < mcc.STOP_PWM_DUTY:
         inside_pwm_duty = mcc.STOP_PWM_DUTY
 
