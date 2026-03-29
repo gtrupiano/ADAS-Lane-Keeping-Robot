@@ -1,3 +1,4 @@
+gpiozero
 numpy
 opencv-python
 picamera2

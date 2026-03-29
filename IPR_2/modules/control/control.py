@@ -36,12 +36,22 @@ import modules.motor.motor_control_config as motor_control_config
 #              and sends commands to the motor controller.
 ###############################################################################
 
-def determine_movement(left_lane, right_lane):
+def determine_movement(left_lane, right_lane, object_distance_cm):
+    # Stopping conditions:
+
     # If no lanes are detected, stop and wait for the next frame
     if left_lane is None and right_lane is None:
         motor_control.stop_motors()
         return
 
+    # If an object is detected within X CM, stop
+    if object_distance_cm is not None and object_distance_cm < vision_config.MAX_REACTION_DISTANCE:
+        motor_control.stop_motors()
+        return
+    
+
+    # Fallback conditions:
+    
     # If only one lane is detected, commit to that recovery action and return
     # This prevents later logic from overriding the turn command in the same frame
     #    Assumptions: 

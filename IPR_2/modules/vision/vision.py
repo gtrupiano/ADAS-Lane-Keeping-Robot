@@ -413,7 +413,7 @@ def average_left_and_right_lanes(left_lane, right_lane):
         left_lane_np = np.array(left_lane, dtype=np.float32)
 
         if running_average_left_lane is not None:
-            averaged_left_lane = (vision_config.ALPHA * left_lane_np) + ((1 - vision_config.ALPHA) * running_average_left_lane)
+            averaged_left_lane = (vision_config.LANE_EMA_ALPHA * left_lane_np) + ((1 - vision_config.LANE_EMA_ALPHA) * running_average_left_lane)
         else:
             averaged_left_lane = left_lane_np
 
@@ -427,7 +427,7 @@ def average_left_and_right_lanes(left_lane, right_lane):
         right_lane_np = np.array(right_lane, dtype=np.float32)
 
         if running_average_right_lane is not None:
-            averaged_right_lane = (vision_config.ALPHA * right_lane_np) + ((1 - vision_config.ALPHA) * running_average_right_lane)
+            averaged_right_lane = (vision_config.LANE_EMA_ALPHA * right_lane_np) + ((1 - vision_config.LANE_EMA_ALPHA) * running_average_right_lane)
         else:
             averaged_right_lane = right_lane_np
 

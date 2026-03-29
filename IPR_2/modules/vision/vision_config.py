@@ -18,8 +18,8 @@ import numpy as np
 # Whether to display debug frames (e.g., edge detection, lane markings) during processing
 SHOW_DEBUG_FRAMES = False
 
-# EMA smoothing factor
-ALPHA = 0.36
+# EMA smoothing factor for left and right lanes
+LANE_EMA_ALPHA = 0.36
 
 # Default ROI points (these will be overwritten if calibration is enabled)
 X1 = 94
@@ -38,7 +38,8 @@ BLUR_KERNEL_SIZE = 5 # Size of block that goes through each pixel and calculates
 SIGMA_BLUR_CONTROL = 0
 
 # Morphological operation parameters
-MORPH_KERNEL_SIZE = 3 # Size of the kernel used for morphological operations (e.g., closing to connect dashed lane markings)
+# Size of the kernel used for morphological operations (e.g., closing to connect dashed lane markings)
+MORPH_KERNEL_SIZE = 3
 
 # Canny edge detection thresholds
 CANNY_LOW_THRESHOLD = 30
@@ -58,3 +59,6 @@ MAX_SLOPE = 3.5
 # Lane tracking parameters
 # Maximum number of consecutive frames a lane can be missed before it's considered lost
 MAX_MISSED_FRAMES = 3 
+
+# Maximum distance in CM that the car should react and stop for
+MAX_REACTION_DISTANCE = 20

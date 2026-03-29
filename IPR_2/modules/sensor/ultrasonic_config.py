@@ -1,6 +1,6 @@
 ###############################################################################
-# File Name: camera_config.py
-# Description: Contains configuration parameters for the Pi Camera.
+# File Name: ultrasonic_config.py
+# Description: Constants for the ultrasonic sensor module.
 ###############################################################################
 
 ###############################################################################
@@ -11,12 +11,20 @@
 
 # Library Imports
 
+###############################################################################
+# PIN DECLARATION
+###############################################################################
+
+# This pin numbers represent the Freenove board pinout
+ECHO_PIN = 27
+TRIGGER_PIN = 22
+
 
 ###############################################################################
 # CONSTANTS
 ###############################################################################
 
-# Camera Parameters
-# Resolution camera is set to capture at
-CAMERA_WIDTH = 3840
-CAMERA_HEIGHT = 2160
+MIN_ULTRASONIC_DISTANCE_CM = 2
+MAX_ULTRASONIC_DISTANCE_CM = 100
+
+ULTRASONIC_EMA_ALPHA = 0.36

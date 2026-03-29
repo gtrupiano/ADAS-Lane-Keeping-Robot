@@ -13,6 +13,8 @@ import modules.vision.vision as vision
 import modules.vision.vision_config as vision_config
 import modules.control.control as control
 import modules.motor.motor_control as motor_control
+import modules.sensor.ultrasonic as ultrasonic
+import modules.sensor.ultrasonic_config as ultrasonic_config
 
 # Library Imports
 import cv2
@@ -61,7 +63,13 @@ def main():
 
     # Main loop for lane detection and movement control
     while True:
+        # Sensor readings:
+        
+        # Fetching frame from camera
         original_frame, resized_frame, validity = camera.fetch_frame()
+
+        # Fetching distance reading from ultrasonic sensor
+        object_distance_cm = ultrasonic.get_ultrasonic_distance()
 
         # Checks whether the capturing of the frame was successful. If not, exits the loop since the camera is not working.
         if validity is False:
@@ -71,7 +79,7 @@ def main():
         lanes_on_frame, left_lane, right_lane = vision.detect_lanes(resized_frame)
 
         # Determine movement based on the detected lanes and send commands to the motor controller
-        control.determine_movement(left_lane, right_lane)
+        control.determine_movement(left_lane, right_lane, object_distance_cm)
 
         # Display frames based on whether debug mode is enabled or not
         if vision_config.SHOW_DEBUG_FRAMES:
