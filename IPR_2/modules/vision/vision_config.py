@@ -61,4 +61,4 @@ MAX_SLOPE = 3.5
 MAX_MISSED_FRAMES = 3 
 
 # Maximum distance in CM that the car should react and stop for
-MAX_REACTION_DISTANCE = 20
+MAX_REACTION_DISTANCE = 50

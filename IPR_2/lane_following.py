@@ -14,11 +14,9 @@ import modules.vision.vision_config as vision_config
 import modules.control.control as control
 import modules.motor.motor_control as motor_control
 import modules.sensor.ultrasonic as ultrasonic
-import modules.sensor.ultrasonic_config as ultrasonic_config
 
 # Library Imports
 import cv2
-
 
 ###############################################################################
 # GLOBAL VARIABLES
@@ -44,8 +42,9 @@ def main():
     global resized_frame
     global lanes_on_frame
 
+    # Initialization
+    ultrasonic.initialize_ultrasonic_sensor()
     camera.configure_camera()
-
     motor_control.setup_motor_controller()
     
     # Capturing input on whether user wants to calibrate the ROI points or not before starting the main loop for lane detection and movement control
@@ -60,6 +59,7 @@ def main():
     # Go into ROI calibration if user input is "yes".
     if roi_calibration_input.lower() == "yes":
         vision.calibrate_ROI_points()
+
 
     # Main loop for lane detection and movement control
     while True:
@@ -102,12 +102,16 @@ def main():
     
     shutdown_peripherals()
 
+
 ###############################################################################
 # Function Name: shutdown_peripherals
 # Description: Shuts down all peripherals and cleans up resources.
 ###############################################################################
 
 def shutdown_peripherals():
+    # Closing ultrasonic sensor
+    ultrasonic.close_ultrasonic_sensor()
+
     # Stopping the camera and closing it
     camera.shutdown_camera()
     

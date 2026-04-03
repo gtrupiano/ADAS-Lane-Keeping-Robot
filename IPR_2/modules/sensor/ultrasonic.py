@@ -124,7 +124,7 @@ def _calculate_exponential_moving_average(instantaneous_distance):
         return running_average_distance_cm
 
     # EMA formula calculation
-    new_running_average = (ultrasonic_config.EMA_ALPHA * instantaneous_distance) + ((1 - ultrasonic_config.EMA_ALPHA) * running_average_distance_cm)
+    new_running_average = (ultrasonic_config.ULTRASONIC_EMA_ALPHA * instantaneous_distance) + ((1 - ultrasonic_config.ULTRASONIC_EMA_ALPHA) * running_average_distance_cm)
 
     # Update running average with new one
     running_average_distance_cm = new_running_average

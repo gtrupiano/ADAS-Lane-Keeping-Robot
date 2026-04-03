@@ -22,7 +22,8 @@ import modules.motor.motor_control_config as motor_control_config
 # GLOBAL VARIABLES
 ###############################################################################
 
-
+reverse_flag = False
+reverse_counter = 0
 
 ###############################################################################
 # GLOBAL FUNCTIONS
@@ -37,18 +38,50 @@ import modules.motor.motor_control_config as motor_control_config
 ###############################################################################
 
 def determine_movement(left_lane, right_lane, object_distance_cm):
+    global reverse_flag
+    global reverse_counter
+    
     # Stopping conditions:
 
     # If no lanes are detected, stop and wait for the next frame
     if left_lane is None and right_lane is None:
-        motor_control.stop_motors()
-        return
+        if reverse_flag:
+            motor_control.move_backward()
+
+            if reverse_counter > control_config.REVERSE_LIMIT:
+                reverse_flag = False
+                reverse_counter = 0
+            else:
+                reverse_counter += 1
+            
+            return
+        else:
+            motor_control.stop_motors()
+            return
+    
+    reverse_flag = True
+    reverse_counter = 0
+    
 
     # If an object is detected within X CM, stop
     if object_distance_cm is not None and object_distance_cm < vision_config.MAX_REACTION_DISTANCE:
-        motor_control.stop_motors()
-        return
+        if reverse_flag:
+            motor_control.move_backward()
+
+            if reverse_counter > control_config.REVERSE_LIMIT:
+                reverse_flag = False
+                reverse_counter = 0
+            else:
+                reverse_counter += 1
+            
+            return
+        else:
+            motor_control.stop_motors()
+            return
     
+    reverse_flag = True
+    reverse_counter = 0
+
 
     # Fallback conditions:
     
@@ -100,8 +133,8 @@ def determine_movement(left_lane, right_lane, object_distance_cm):
     inside_pwm_duty = int((1.0 - error_ratio) * motor_control_config.BASE_PWM_DUTY)
 
     # Constraining the minimum PWM duty cycle
-    if inside_pwm_duty < 500:
-        inside_pwm_duty = 500
+    if inside_pwm_duty < motor_control_config.BASE_LOW_PWM_DUTY:
+        inside_pwm_duty = motor_control_config.BASE_LOW_PWM_DUTY
 
 
     # Negative error means lane center is to the right of frame center

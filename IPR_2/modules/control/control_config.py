@@ -22,3 +22,6 @@ MIN_ERROR_THRESHOLD = 20
 
 # Maximum lane center to frame center error (in pixels) for mapping to a PWM duty cycle.
 MAX_LANE_TO_FRAME_CENTER_ERROR = 145.0
+
+#
+REVERSE_LIMIT = 10

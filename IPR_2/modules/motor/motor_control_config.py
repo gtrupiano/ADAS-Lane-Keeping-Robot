@@ -36,7 +36,8 @@ RIGHT_BOTTOM_WHEEL_IN1_PWM_CHNL = 4
 RIGHT_BOTTOM_WHEEL_IN2_PWM_CHNL = 5
 
 # Fastest PWM duty cycle that can be applied for realistic movement of the robot (calibratable)
-BASE_PWM_DUTY = 1200
+BASE_PWM_DUTY = 1800
+BASE_LOW_PWM_DUTY = 500
 
 FORWARD_PWM_DUTY = 1200
 BACKWARD_PWM_DUTY = -600

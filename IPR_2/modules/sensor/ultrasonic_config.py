@@ -16,8 +16,8 @@
 ###############################################################################
 
 # This pin numbers represent the Freenove board pinout
-ECHO_PIN = 27
-TRIGGER_PIN = 22
+ECHO_PIN = 22
+TRIGGER_PIN = 27
 
 
 ###############################################################################
@@ -25,6 +25,6 @@ TRIGGER_PIN = 22
 ###############################################################################
 
 MIN_ULTRASONIC_DISTANCE_CM = 2
-MAX_ULTRASONIC_DISTANCE_CM = 100
+MAX_ULTRASONIC_DISTANCE_CM = 150
 
-ULTRASONIC_EMA_ALPHA = 0.36
+ULTRASONIC_EMA_ALPHA = 0.80
