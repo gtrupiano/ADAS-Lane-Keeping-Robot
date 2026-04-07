@@ -19,13 +19,13 @@ import numpy as np
 SHOW_DEBUG_FRAMES = False
 
 # EMA smoothing factor for left and right lanes
-LANE_EMA_ALPHA = 0.36
+LANE_EMA_ALPHA = 0.40
 
 # Default ROI points (these will be overwritten if calibration is enabled)
-X1 = 94
+X1 = 0
 Y1 = 196
 
-X2 = 546
+X2 = 640
 Y2 = 196
 
 # Resolution that the image will be resized to for processing (to speed up processing)
@@ -58,7 +58,7 @@ MAX_SLOPE = 3.5
 
 # Lane tracking parameters
 # Maximum number of consecutive frames a lane can be missed before it's considered lost
-MAX_MISSED_FRAMES = 3 
+MAX_MISSED_FRAMES = 2
 
 # Maximum distance in CM that the car should react and stop for
-MAX_REACTION_DISTANCE = 50
+MAX_REACTION_DISTANCE = 80

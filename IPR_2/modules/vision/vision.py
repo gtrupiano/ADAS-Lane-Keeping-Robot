@@ -121,8 +121,6 @@ def detect_lanes(frame):
         code=cv2.COLOR_BGR2GRAY
     )
 
-    gray_frame[gray_frame > 220] = 0
-
     # Blurs the image to reduce noise for better edge detection results
     filtered_frame = cv2.GaussianBlur(
         src=gray_frame, 
