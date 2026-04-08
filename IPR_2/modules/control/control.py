@@ -76,9 +76,9 @@ def determine_movement(left_lane, right_lane, object_distance_cm):
     error = frame_center_x - lane_center_x
 
     # Go straight when close enough
-    if abs(error) <= control_config.MIN_ERROR_THRESHOLD:
-        motor_control.move_forward()
-        return
+    # if abs(error) <= control_config.MIN_ERROR_THRESHOLD:
+    #     motor_control.move_forward()
+    #     return
 
 
     # Mapping the error to a PWM duty cycle for the inside motors when turning.

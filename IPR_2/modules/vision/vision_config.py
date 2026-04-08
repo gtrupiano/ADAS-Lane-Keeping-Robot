@@ -22,10 +22,10 @@ SHOW_DEBUG_FRAMES = False
 LANE_EMA_ALPHA = 0.40
 
 # Default ROI points (these will be overwritten if calibration is enabled)
-X1 = 0
+X1 = 120
 Y1 = 196
 
-X2 = 640
+X2 = 600
 Y2 = 196
 
 # Resolution that the image will be resized to for processing (to speed up processing)
