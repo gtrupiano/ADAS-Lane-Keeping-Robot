@@ -1,6 +1,6 @@
 
 ###############################################################################
-# File Name: light_detection_test.py
+# File Name: light_detection.py
 # Description: 
 ###############################################################################
 
@@ -9,7 +9,6 @@
 ###############################################################################
 
 # File Imports
-from modules.camera import camera
 from modules.vision import light_detection_config
 
 # Library Imports
@@ -26,38 +25,6 @@ green_mask = None
 ###############################################################################
 # GLOBAL FUNCTIONS
 ###############################################################################
-
-###############################################################################
-# Function Name: main
-# Description: 
-###############################################################################
-
-def main():
-    camera.configure_camera()
-
-    while True:
-        _, frame, validity = camera.fetch_frame()
-
-        # Checks whether the capturing of the frame was successful. If not, exits the loop since the camera is not working.
-        if validity is False:
-            break
-        
-        process_lights(frame)
-
-        cv2.imshow("Original", frame)
-        cv2.imshow("Red Mask", red_mask)
-        cv2.imshow("Yellow Mask", yellow_mask)
-        cv2.imshow("Green Mask", green_mask)
-
-        # Break the loop when 'ESC' key is pressed
-        key = cv2.waitKey(1)
-
-        # Exit on ESC (27 is ASCII for ESC)
-        if key == 27:
-            break
-
-    cv2.destroyAllWindows()
-
 
 ###############################################################################
 # Function Name: process_lights
@@ -113,12 +80,14 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
     )
 
     # Finding all detected items with the same HSV signature that was specified
-    contours = cv2.findContours(
+    contours, _ = cv2.findContours(
         mask, 
         cv2.RETR_EXTERNAL, 
         cv2.CHAIN_APPROX_SIMPLE
     )
 
+    # Looping through contours to find ones that fit the area constraint
+    # With those found, draw a bounding box and add text based on the light color
     for contour in contours:
         # Create a bounding box around the detected contour
         x, y, w, h = cv2.boundingRect(contour)
@@ -195,17 +164,3 @@ def process_mask(hsv_frame, hsv_range: light_detection_config.ColorHSVRange):
     )
 
     return morph_mask
-
-
-###############################################################################
-# Function Name: shutdown_peripherals
-# Description: Shuts down all peripherals and cleans up resources.
-###############################################################################
-
-def shutdown_peripherals():
-    # Stopping the camera and closing it
-    camera.shutdown_camera()
-
-
-if __name__ == "__main__":
-    main()
