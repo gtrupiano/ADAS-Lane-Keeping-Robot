@@ -11,6 +11,7 @@
 
 # Library Imports
 import numpy as np
+from typing import List
 
 ###############################################################################
 # CLASS DEFINITIONS
@@ -30,6 +31,12 @@ class Light:
         self.color = color.lower()
         self.hsv_range = hsv_range
         self.light_area_min = light_area_min
+
+class CalibrationPoint:
+    def __init__(self, area, distance):
+        self.area = area # Pixels
+        self.distance = distance # Inches
+
 
 ###############################################################################
 # CONSTANTS
@@ -55,3 +62,22 @@ GREEN_LIGHT = Light("Green", GREEN_HSV_RANGE, GREEN_AREA_MIN)
 # Morphology values
 MORPH_KERNEL_SIZE = 3
 MORPH_KERNEL = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE), np.uint8)
+
+
+# EMA smoothing factor for detected light area
+LIGHT_AREA_EMA_ALPHA = 0.40
+
+
+# Calibration table for interpolating area to distance
+NUMBER_OF_CALIBRATION_POINTS = 8
+
+CALIBRATION_TABLE = [
+    CalibrationPoint(area=16, distance=16),
+    CalibrationPoint(area=18, distance=14),
+    CalibrationPoint(area=24, distance=11),
+    CalibrationPoint(area=32, distance=9),
+    CalibrationPoint(area=40, distance=7),
+    CalibrationPoint(area=50, distance=5),
+    CalibrationPoint(area=64, distance=3),
+    CalibrationPoint(area=80, distance=2),
+]

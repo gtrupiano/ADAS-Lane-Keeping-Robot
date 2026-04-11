@@ -14,6 +14,8 @@ import modules.vision.vision_config as vision_config
 import modules.control.control as control
 import modules.motor.motor_control as motor_control
 import modules.sensor.ultrasonic as ultrasonic
+import modules.vision.light_detection_config as light_detection_config
+import modules.vision.light_detection as light_detection
 
 # Library Imports
 import cv2
@@ -74,6 +76,8 @@ def main():
         # Checks whether the capturing of the frame was successful. If not, exits the loop since the camera is not working.
         if validity is False:
             break
+        
+        
 
         # Detecting lanes and drawing them on the original frame
         lanes_on_frame, left_lane, right_lane = vision.detect_lanes(resized_frame)
@@ -85,6 +89,9 @@ def main():
         if vision_config.SHOW_DEBUG_FRAMES:
             cv2.imshow('Original Frame', original_frame)
             cv2.imshow('Resized Frame', resized_frame)
+            cv2.imshow('Red Light Mask', light_detection.red_mask)
+            cv2.imshow('Yellow Light Mask', light_detection.yellow_mask)
+            cv2.imshow('Green Light Mask', light_detection.green_mask)
             cv2.imshow('Filtered Frame', vision.filtered_frame)
             cv2.imshow('Edges Frame', vision.frame_edges)
             cv2.imshow('ROI Edges Frame', vision.roi_edges)
