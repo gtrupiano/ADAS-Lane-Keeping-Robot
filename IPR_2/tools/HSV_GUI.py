@@ -1,5 +1,28 @@
+###############################################################################
+# File Name: HSV_GUI.py
+# Description: 
+###############################################################################
+
+###############################################################################
+# IMPORTS
+###############################################################################
+
+# Library Imports
 import cv2
 import numpy as np
+
+###############################################################################
+# GLOBAL VARIABLES
+###############################################################################
+
+###############################################################################
+# GLOBAL FUNCTIONS
+###############################################################################
+
+###############################################################################
+# Function Name: main
+# Description: 
+###############################################################################
 
 def main():
     global vc
@@ -28,7 +51,7 @@ def main():
         
         mask = cv2.inRange(hsv_frame, lower, upper)
 
-        MORPH_KERNEL_SIZE = 5
+        MORPH_KERNEL_SIZE = 3
         MORPH_KERNEL = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE), np.uint8)
         
         morph_mask = cv2.morphologyEx(
@@ -44,13 +67,6 @@ def main():
         )
 
         cnts, _ = cv2.findContours(morph_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        #cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-
-        # if len(cnts) >= 2:
-        #     cnts = cnts[0]
-        # else:
-        #     cnts = cnts[1]
 
         for c in cnts:
             x,y,w,h = cv2.boundingRect(c)
@@ -71,6 +87,11 @@ def main():
     vc.release()
     cv2.destroyAllWindows()
 
+
+###############################################################################
+# Function Name: init
+# Description: 
+###############################################################################
 
 def init():
     global vc
@@ -100,6 +121,7 @@ def init():
     cv2.createTrackbar("Min_Area", "HSV", 256, 5000, null)
 
     return rval
+
 
 if __name__ == "__main__":
     main()

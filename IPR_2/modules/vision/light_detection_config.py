@@ -37,13 +37,13 @@ class Light:
 
 # Calibratable values for HSV of red, yellow, and green
 # NOTE: H only goes to 179
-RED_HSV_RANGE = ColorHSVRange([0, 120, 120], [10, 255, 255])
-YELLOW_HSV_RANGE = ColorHSVRange([20, 120, 147], [35, 255, 255])
-GREEN_HSV_RANGE  = ColorHSVRange([40, 80, 80], [90, 255, 255])
+RED_HSV_RANGE = ColorHSVRange([106, 183, 239], [133, 255, 255])
+YELLOW_HSV_RANGE = ColorHSVRange([78, 207, 154], [109, 255, 255])
+GREEN_HSV_RANGE  = ColorHSVRange([32, 84, 126], [69, 255, 255])
 
 # How large the area of the detected light needs to be before it should be detected
-RED_AREA_MIN = 256
-YELLOW_AREA_MIN = 64
+RED_AREA_MIN = 128
+YELLOW_AREA_MIN = 128
 GREEN_AREA_MIN = 128
 
 # Constructed object to be used in the program
@@ -53,5 +53,5 @@ GREEN_LIGHT = Light("Green", GREEN_HSV_RANGE, GREEN_AREA_MIN)
 
 
 # Morphology values
-MORPH_KERNEL_SIZE = 5
+MORPH_KERNEL_SIZE = 3
 MORPH_KERNEL = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE), np.uint8)

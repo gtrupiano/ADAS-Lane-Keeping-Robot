@@ -86,8 +86,6 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
         cv2.CHAIN_APPROX_SIMPLE
     )
 
-    # Looping through contours to find ones that fit the area constraint
-    # With those found, draw a bounding box and add text based on the light color
     for contour in contours:
         # Create a bounding box around the detected contour
         x, y, w, h = cv2.boundingRect(contour)
@@ -100,10 +98,10 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
 
             # Set the color of the bounding box to the color of the light
             if light.color == "red":
-                color = (255,0,0)
+                color = (0,0,255)
                 text = "Red LED Detected"
             elif light.color == "yellow":
-                color = (255,255,0)
+                color = (0,255,255)
                 text = "Yellow LED Detected"
             elif light.color == "green":
                 color = (0,255,0)

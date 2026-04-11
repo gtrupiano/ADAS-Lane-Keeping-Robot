@@ -8,11 +8,12 @@ sudo apt update
 echo "Installing only required system packages..."
 sudo apt install -y \
     python3-venv \
+    python3-libcamera \
     python3-picamera2 \
     python3-smbus \
     i2c-tools
 
-if [ ! -d "venv" ]; then
+if [ ! -d ".venv" ]; then
     echo "Creating virtual environment..."
     python3 -m venv .venv
 fi
