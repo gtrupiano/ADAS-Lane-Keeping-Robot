@@ -36,14 +36,15 @@ running_average_green_area = None
 
 ###############################################################################
 # Function Name: get_light_distance
-# Description: 
+# Description: Obtains the light that is currently being detected and the 
+# distance of that light.
 ###############################################################################
 
 def get_light_distance():
     active_light = determine_active_light()
 
     if active_light is None:
-        return "Error", 0
+        return None, None
 
     light_distance = 0
 

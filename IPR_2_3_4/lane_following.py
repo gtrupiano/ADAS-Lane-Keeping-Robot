@@ -77,13 +77,20 @@ def main():
         if validity is False:
             break
         
-        
+        # Find light in frame and draw them on original frame.
+        light_detection.process_lights(original_frame)
+
+        # Obtains active light and it's current distance
+        active_light, light_distance = light_detection.get_light_distance()
+
+        if (active_light is None) or (light_distance is None):
+            print("No light detected")
 
         # Detecting lanes and drawing them on the original frame
         lanes_on_frame, left_lane, right_lane = vision.detect_lanes(resized_frame)
 
         # Determine movement based on the detected lanes and send commands to the motor controller
-        control.determine_movement(left_lane, right_lane, object_distance_cm)
+        control.determine_movement(left_lane, right_lane, object_distance_cm, active_light, light_distance)
 
         # Display frames based on whether debug mode is enabled or not
         if vision_config.SHOW_DEBUG_FRAMES:

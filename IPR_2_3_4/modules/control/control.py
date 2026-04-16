@@ -14,6 +14,7 @@ import modules.control.control_config as control_config
 import modules.vision.vision_config as vision_config
 import modules.motor.motor_control as motor_control
 import modules.motor.motor_control_config as motor_control_config
+import modules.vision.light_detection_config as light_detection_config
 
 # Library Imports
 
@@ -35,7 +36,7 @@ import modules.motor.motor_control_config as motor_control_config
 #              and sends commands to the motor controller.
 ###############################################################################
 
-def determine_movement(left_lane, right_lane, object_distance_cm):
+def determine_movement(left_lane, right_lane, object_distance_cm, active_light, light_distance):
     # Stopping conditions:
 
     # If no lanes are detected, stop and wait for the next frame
@@ -47,6 +48,27 @@ def determine_movement(left_lane, right_lane, object_distance_cm):
     if object_distance_cm is not None and object_distance_cm < vision_config.MAX_REACTION_DISTANCE:
         motor_control.stop_motors()
         return
+
+
+    # Since the yellow will impact speed, the predefined calibration values need to be influenced here.
+    base_pwm = motor_control_config.BASE_PWM_DUTY
+    base_low_pwm = motor_control_config.BASE_LOW_PWM_DUTY
+
+    YELLOW_BASE_PWM = 800
+    YELLOW_BASE_PWM_LOW = 400
+
+    # When both a light is detected and it's distance can be found,
+    # modify the systems behavior based on the lights
+    if (active_light is not None) and (light_distance is not None):
+        if active_light == "red":
+            if light_distance <= light_detection_config.LED_STOPPING_DISTANCE:
+                motor_control.stop_motors()
+                return
+        elif active_light == "yellow":
+            base_pwm = YELLOW_BASE_PWM
+            base_low_pwm = YELLOW_BASE_PWM_LOW
+        else: # active_light == "green":
+            pass    
 
 
     # Fallback conditions:
@@ -75,12 +97,6 @@ def determine_movement(left_lane, right_lane, object_distance_cm):
     # Positive error means frame center is to the right of lane center
     error = frame_center_x - lane_center_x
 
-    # Go straight when close enough
-    # if abs(error) <= control_config.MIN_ERROR_THRESHOLD:
-    #     motor_control.move_forward()
-    #     return
-
-
     # Mapping the error to a PWM duty cycle for the inside motors when turning.
     # The larger the error, the slower the inside motors should go to allow for sharper turns.
     error_ratio = abs(error) / control_config.MAX_LANE_TO_FRAME_CENTER_ERROR
@@ -96,18 +112,18 @@ def determine_movement(left_lane, right_lane, object_distance_cm):
     # (lane center is perfectly aligned with frame center) and 
     # will slow down to 0 when the error is at or above the maximum
     # lane to frame center error.
-    inside_pwm_duty = int((1.0 - error_ratio) * motor_control_config.BASE_PWM_DUTY)
+    inside_pwm_duty = int((1.0 - error_ratio) * base_pwm)
 
     # Constraining the minimum PWM duty cycle
-    if inside_pwm_duty < motor_control_config.BASE_LOW_PWM_DUTY:
-        inside_pwm_duty = motor_control_config.BASE_LOW_PWM_DUTY
+    if inside_pwm_duty < base_low_pwm:
+        inside_pwm_duty = base_low_pwm
 
 
     # Negative error means lane center is to the right of frame center
     # Turn right if lane center is to the right of frame center
     # When turning right, then the left motors should be at full speed and the right motors should be slowed down based on the error.
     if error < 0:
-        left_pwm_duty = motor_control_config.BASE_PWM_DUTY
+        left_pwm_duty = base_pwm
         right_pwm_duty = inside_pwm_duty
         motor_control.move_at_speed(left_pwm_duty, right_pwm_duty)
 
@@ -116,5 +132,34 @@ def determine_movement(left_lane, right_lane, object_distance_cm):
     # When turning left, then the right motors should be at full speed and the left motors should be slowed down based on the error.
     elif error > 0:
         left_pwm_duty = inside_pwm_duty
-        right_pwm_duty = motor_control_config.BASE_PWM_DUTY
+        right_pwm_duty = base_pwm
         motor_control.move_at_speed(left_pwm_duty, right_pwm_duty)
+    
+    # If error somehow becomes exactly 0
+    else:
+        motor_control.move_at_speed(base_pwm, base_pwm)
+
+
+    # # Test control logic with deadband
+
+    # # When the error is very minimal, don't react
+    # if abs(error) < control_config.MIN_ERROR_THRESHOLD:
+    #     motor_control.move_at_speed(base_pwm, base_pwm)
+    
+    # # Negative error means lane center is to the right of frame center
+    # # Turn right if lane center is to the right of frame center
+    # # When turning right, then the left motors should be at full speed and the right motors should be slowed down based on the error.
+    # if error < 0:
+    #     left_pwm_duty = base_pwm
+    #     right_pwm_duty = inside_pwm_duty
+    #     motor_control.move_at_speed(left_pwm_duty, right_pwm_duty)
+    # # Positive error means lane center is to the left of frame center
+    # # Turn left if lane center is to the left of frame center
+    # # When turning left, then the right motors should be at full speed and the left motors should be slowed down based on the error.
+    # elif error > 0:
+    #     left_pwm_duty = inside_pwm_duty
+    #     right_pwm_duty = base_pwm
+    #     motor_control.move_at_speed(left_pwm_duty, right_pwm_duty)
+    # # If error somehow becomes exactly 0 then just drive straight
+    # else:
+    #     motor_control.move_at_speed(base_pwm, base_pwm)

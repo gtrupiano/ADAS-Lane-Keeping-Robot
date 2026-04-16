@@ -81,3 +81,6 @@ CALIBRATION_TABLE = [
     CalibrationPoint(area=64, distance=3),
     CalibrationPoint(area=80, distance=2),
 ]
+
+# Inches
+LED_STOPPING_DISTANCE = 6
