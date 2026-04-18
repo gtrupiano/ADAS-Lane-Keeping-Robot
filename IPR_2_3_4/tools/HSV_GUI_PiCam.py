@@ -60,19 +60,22 @@ def main():
         
         mask = cv2.inRange(hsv_frame, lower, upper)
 
-        MORPH_KERNEL_SIZE = 3
-        MORPH_KERNEL = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE), np.uint8)
+        DIlATE_KERNEL_SIZE = 5
+        DILATE_KERNEL = np.ones((DIlATE_KERNEL_SIZE, DIlATE_KERNEL_SIZE), np.uint8)
+
+        ERODE_KERNEL_SIZE = 5
+        ERODE_KERNEL = np.ones((ERODE_KERNEL_SIZE, ERODE_KERNEL_SIZE), np.uint8)
         
-        morph_mask = cv2.morphologyEx(
+        morph_mask = cv2.dilate(
             src=mask,
-            op=cv2.MORPH_OPEN,
-            kernel=MORPH_KERNEL
+            kernel=DILATE_KERNEL,
+            iterations=2
         )
 
-        morph_mask = cv2.morphologyEx(
+        morph_mask = cv2.erode(
             src=morph_mask,
-            op=cv2.MORPH_CLOSE,
-            kernel=MORPH_KERNEL
+            kernel=ERODE_KERNEL,
+            iterations=1
         )
 
         cnts, _ = cv2.findContours(morph_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -84,6 +87,7 @@ def main():
             
             if a >= min_area:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (36,255,12), 2)
+                break
         
         cv2.imshow('Mask', morph_mask)
         cv2.imshow('Original', frame)
@@ -147,6 +151,11 @@ def configure_camera():
     if validity is False:
         print("Failed to capture frame")
         exit()
+    
+    # pi_camera.set_controls({
+    #     "Brightness": -0.3,     # range roughly -1.0 to 1.0
+    #     "ExposureValue": -1.0   # lower = darker image
+    # })
 
 
 ###############################################################################

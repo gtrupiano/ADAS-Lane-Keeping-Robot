@@ -78,7 +78,7 @@ def main():
             break
         
         # Find light in frame and draw them on original frame.
-        light_detection.process_lights(original_frame)
+        light_detection.process_lights(resized_frame)
 
         # Obtains active light and it's current distance
         active_light, light_distance = light_detection.get_light_distance()
@@ -104,11 +104,13 @@ def main():
             cv2.imshow('ROI Edges Frame', vision.roi_edges)
             cv2.imshow('Lanes', lanes_on_frame)
         else:
-            cv2.imshow('Resized Frame', resized_frame)
             cv2.imshow('Lanes', lanes_on_frame)
+            cv2.imshow('Red Light Mask', light_detection.red_mask)
+            cv2.imshow('Yellow Light Mask', light_detection.yellow_mask)
+            cv2.imshow('Green Light Mask', light_detection.green_mask)
 
         # Break the loop when 'ESC' key is pressed
-        key = cv2.waitKey(1)
+        key = cv2.waitKey(20)
 
         # Exit on ESC (27 is ASCII for ESC)
         if key == 27:

@@ -23,6 +23,14 @@ red_mask = None
 yellow_mask = None
 green_mask = None
 
+red_area = None
+yellow_area = None
+green_area = None
+
+running_average_red_area = None
+running_average_yellow_area = None
+running_average_green_area = None
+
 ###############################################################################
 # GLOBAL FUNCTIONS
 ###############################################################################
@@ -70,6 +78,10 @@ def process_lights(frame):
     global yellow_mask
     global green_mask
 
+    global red_area
+    global yellow_area
+    global green_area
+
     # Hue (H): color (red, green, yellow)
     # Saturation (S): how pure the color is
     # Value (V): brightness of the color
@@ -81,21 +93,38 @@ def process_lights(frame):
     )
 
     # Finds all lights in the frame and draws bounding boxes with proper text in the frame
-    red_mask = detect_light(
+    red_mask, red_area = detect_light(
         frame,
         hsv_frame,
         light_detection_config.RED_LIGHT
     )
-    yellow_mask = detect_light(
+    yellow_mask, yellow_area = detect_light(
         frame,
         hsv_frame,
         light_detection_config.YELLOW_LIGHT
     )
-    green_mask = detect_light(
+    green_mask, green_area = detect_light(
         frame,
         hsv_frame,
         light_detection_config.GREEN_LIGHT
     )
+
+    if red_area is not None:
+        red_average = average_light_area("red")
+    else:
+        red_average = 0
+    
+    if yellow_area is not None:
+        yellow_average = average_light_area("yellow")
+    else:
+        yellow_average = 0
+
+    if green_area is not None:
+        green_average = average_light_area("green")
+    else:
+        green_average = 0
+    
+    print(f"Area: Red = {red_average}; Yellow = {yellow_average}; Green = {green_average}")
 
 
 ###############################################################################
@@ -119,6 +148,8 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
         cv2.CHAIN_APPROX_SIMPLE
     )
 
+    light_area = None
+
     for contour in contours:
         # Create a bounding box around the detected contour
         x, y, w, h = cv2.boundingRect(contour)
@@ -128,7 +159,7 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
 
         # Draw the bounding box if the area is greater than the minimum
         if area >= light.light_area_min:
-
+            light_area = area
             # Set the color of the bounding box to the color of the light
             if light.color == "red":
                 color = (0,0,255)
@@ -162,8 +193,9 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
                 color=color,
                 thickness=2
             )
+            break
 
-    return mask
+    return mask, light_area
 
             
 ###############################################################################
@@ -182,20 +214,52 @@ def process_mask(hsv_frame, hsv_range: light_detection_config.ColorHSVRange):
 
     # Erode and dilate the mask
     # This allows gaps to be closed for cleaner detected items
-    morph_mask = cv2.morphologyEx(
+    morph_mask = cv2.dilate(
         src=mask,
-        op=cv2.MORPH_OPEN,
-        kernel=light_detection_config.MORPH_KERNEL
+        kernel=light_detection_config.DILATE_KERNEL,
+        iterations=2
     )
 
-    morph_mask = cv2.morphologyEx(
+    morph_mask = cv2.erode(
         src=morph_mask,
-        op=cv2.MORPH_CLOSE,
-        kernel=light_detection_config.MORPH_KERNEL
+        kernel=light_detection_config.ERODE_KERNEL,
+        iterations=1
     )
 
     return morph_mask
 
+
+def average_light_area(active_light):
+    global running_average_red_area
+    global running_average_yellow_area
+    global running_average_green_area
+
+    if active_light == "red":
+        if running_average_red_area is None:
+            running_average_red_area = red_area
+        else:
+            running_average_red_area = (light_detection_config.LIGHT_AREA_EMA_ALPHA * red_area) + ((1 - light_detection_config.LIGHT_AREA_EMA_ALPHA) * running_average_red_area)
+
+        return running_average_red_area
+    
+    elif active_light == "yellow":
+        if running_average_yellow_area is None:
+            running_average_yellow_area = yellow_area
+        else:
+            running_average_yellow_area = (light_detection_config.LIGHT_AREA_EMA_ALPHA * yellow_area) + ((1 - light_detection_config.LIGHT_AREA_EMA_ALPHA) * running_average_yellow_area)
+        
+        return running_average_yellow_area
+
+    elif active_light == "green":
+        if running_average_green_area is None:
+            running_average_green_area = green_area
+        else:
+            running_average_green_area = (light_detection_config.LIGHT_AREA_EMA_ALPHA * green_area) + ((1 - light_detection_config.LIGHT_AREA_EMA_ALPHA) * running_average_green_area)
+        
+        return running_average_green_area
+
+    else:
+        return 0
 
 ###############################################################################
 # Function Name: shutdown_peripherals

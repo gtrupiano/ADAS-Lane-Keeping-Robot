@@ -139,7 +139,6 @@ def determine_movement(left_lane, right_lane, object_distance_cm, active_light, 
     else:
         motor_control.move_at_speed(base_pwm, base_pwm)
 
-
     # # Test control logic with deadband
 
     # # When the error is very minimal, don't react

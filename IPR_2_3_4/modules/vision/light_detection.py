@@ -49,7 +49,7 @@ def get_light_distance():
     light_distance = 0
 
     averaged_light_area = average_light_area(active_light)
-    light_distance = light_area_to_distance(averaged_light_area)
+    light_distance = light_area_to_distance(active_light, averaged_light_area)
 
     return active_light, light_distance
 
@@ -59,10 +59,27 @@ def get_light_distance():
 # Description: 
 ###############################################################################
 
-def light_area_to_distance(light_area):
+def light_area_to_distance(active_light, light_area):
     interpolated_distance = 0
-    cal_table = light_detection_config.CALIBRATION_TABLE
-    num_of_cal_points = light_detection_config.NUMBER_OF_CALIBRATION_POINTS
+
+    cal_table = None
+    num_of_cal_points = None
+
+    # Determine which calibration table to use based on the active light
+    if active_light == "red":
+        cal_table = light_detection_config.RED_CALIBRATION_TABLE
+        num_of_cal_points = light_detection_config.NUMBER_OF_RED_CALIBRATION_POINTS
+
+    elif active_light == "yellow":
+        cal_table = light_detection_config.YELLOW_CALIBRATION_TABLE
+        num_of_cal_points = light_detection_config.NUMBER_OF_YELLOW_CALIBRATION_POINTS
+    elif active_light == "green":
+        cal_table = light_detection_config.GREEN_CALIBRATION_TABLE
+        num_of_cal_points = light_detection_config.NUMBER_OF_GREEN_CALIBRATION_POINTS
+    # No active light so don't do interpolation
+    else:
+        return None
+    
 
     if light_area is None:
         return None
@@ -219,6 +236,8 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
         cv2.CHAIN_APPROX_SIMPLE
     )
 
+    light_area = None
+
     for contour in contours:
         # Create a bounding box around the detected contour
         x, y, w, h = cv2.boundingRect(contour)
@@ -226,7 +245,6 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
         # Calculate area
         area = w * h
 
-        light_area = None
 
         # Draw the bounding box if the area is greater than the minimum
         if area >= light.light_area_min:
@@ -268,6 +286,8 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
                 thickness=2
             )
 
+            break
+
     return mask, light_area
 
             
@@ -287,16 +307,16 @@ def process_mask(hsv_frame, hsv_range: light_detection_config.ColorHSVRange):
 
     # Erode and dilate the mask
     # This allows gaps to be closed for cleaner detected items
-    morph_mask = cv2.morphologyEx(
+    morph_mask = cv2.dilate(
         src=mask,
-        op=cv2.MORPH_OPEN,
-        kernel=light_detection_config.MORPH_KERNEL
+        kernel=light_detection_config.DILATE_KERNEL,
+        iterations=2
     )
 
-    morph_mask = cv2.morphologyEx(
+    morph_mask = cv2.erode(
         src=morph_mask,
-        op=cv2.MORPH_CLOSE,
-        kernel=light_detection_config.MORPH_KERNEL
+        kernel=light_detection_config.ERODE_KERNEL,
+        iterations=1
     )
 
     return morph_mask

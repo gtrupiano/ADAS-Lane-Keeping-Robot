@@ -44,9 +44,9 @@ class CalibrationPoint:
 
 # Calibratable values for HSV of red, yellow, and green
 # NOTE: H only goes to 179
-RED_HSV_RANGE = ColorHSVRange([106, 183, 239], [133, 255, 255])
-YELLOW_HSV_RANGE = ColorHSVRange([78, 207, 154], [109, 255, 255])
-GREEN_HSV_RANGE  = ColorHSVRange([32, 84, 126], [69, 255, 255])
+RED_HSV_RANGE = ColorHSVRange([114, 192, 167], [138, 255, 255])
+YELLOW_HSV_RANGE = ColorHSVRange([87, 154, 190], [99, 255, 255])
+GREEN_HSV_RANGE  = ColorHSVRange([59, 151, 113], [77, 255, 255])
 
 # How large the area of the detected light needs to be before it should be detected
 RED_AREA_MIN = 128
@@ -60,27 +60,57 @@ GREEN_LIGHT = Light("Green", GREEN_HSV_RANGE, GREEN_AREA_MIN)
 
 
 # Morphology values
-MORPH_KERNEL_SIZE = 3
-MORPH_KERNEL = np.ones((MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE), np.uint8)
+DIlATE_KERNEL_SIZE = 5
+DILATE_KERNEL = np.ones((DIlATE_KERNEL_SIZE, DIlATE_KERNEL_SIZE), np.uint8)
+
+ERODE_KERNEL_SIZE = 5
+ERODE_KERNEL = np.ones((ERODE_KERNEL_SIZE, ERODE_KERNEL_SIZE), np.uint8)
+
+
+# Calibration tables for interpolating area to distance
+RED_CALIBRATION_TABLE = [
+    CalibrationPoint(area=864, distance=12),
+    CalibrationPoint(area=1000, distance=11),
+    CalibrationPoint(area=1120, distance=10),
+    CalibrationPoint(area=1300, distance=9),
+    CalibrationPoint(area=1590, distance=8),
+    CalibrationPoint(area=1875, distance=7),
+    CalibrationPoint(area=2500, distance=6),
+    CalibrationPoint(area=3400, distance=5),
+    CalibrationPoint(area=4750, distance=4),
+]
+
+YELLOW_CALIBRATION_TABLE = [
+    CalibrationPoint(area=410, distance=12),
+    CalibrationPoint(area=464, distance=11),
+    CalibrationPoint(area=535, distance=10),
+    CalibrationPoint(area=664, distance=9),
+    CalibrationPoint(area=860, distance=8),
+    CalibrationPoint(area=1225, distance=7),
+    CalibrationPoint(area=1600, distance=6),
+    CalibrationPoint(area=2350, distance=5),
+    CalibrationPoint(area=3200, distance=4),
+]
+
+GREEN_CALIBRATION_TABLE = [
+    CalibrationPoint(area=380, distance=12),
+    CalibrationPoint(area=441, distance=11),
+    CalibrationPoint(area=506, distance=10),
+    CalibrationPoint(area=576, distance=9),
+    CalibrationPoint(area=702, distance=8),
+    CalibrationPoint(area=900, distance=7),
+    CalibrationPoint(area=1122, distance=6),
+    CalibrationPoint(area=1564, distance=5),
+    CalibrationPoint(area=2310, distance=4),
+]
+
+NUMBER_OF_RED_CALIBRATION_POINTS = len(RED_CALIBRATION_TABLE) - 1
+NUMBER_OF_YELLOW_CALIBRATION_POINTS = len(YELLOW_CALIBRATION_TABLE) - 1
+NUMBER_OF_GREEN_CALIBRATION_POINTS = len(GREEN_CALIBRATION_TABLE) - 1
 
 
 # EMA smoothing factor for detected light area
-LIGHT_AREA_EMA_ALPHA = 0.40
-
-
-# Calibration table for interpolating area to distance
-NUMBER_OF_CALIBRATION_POINTS = 8
-
-CALIBRATION_TABLE = [
-    CalibrationPoint(area=16, distance=16),
-    CalibrationPoint(area=18, distance=14),
-    CalibrationPoint(area=24, distance=11),
-    CalibrationPoint(area=32, distance=9),
-    CalibrationPoint(area=40, distance=7),
-    CalibrationPoint(area=50, distance=5),
-    CalibrationPoint(area=64, distance=3),
-    CalibrationPoint(area=80, distance=2),
-]
+LIGHT_AREA_EMA_ALPHA = 0.1
 
 # Inches
-LED_STOPPING_DISTANCE = 6
+LED_STOPPING_DISTANCE = 11
