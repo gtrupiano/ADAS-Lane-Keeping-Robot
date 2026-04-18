@@ -54,8 +54,8 @@ def determine_movement(left_lane, right_lane, object_distance_cm, active_light, 
     base_pwm = motor_control_config.BASE_PWM_DUTY
     base_low_pwm = motor_control_config.BASE_LOW_PWM_DUTY
 
-    YELLOW_BASE_PWM = 800
-    YELLOW_BASE_PWM_LOW = 400
+    YELLOW_BASE_PWM = 400
+    YELLOW_BASE_PWM_LOW = 200
 
     # When both a light is detected and it's distance can be found,
     # modify the systems behavior based on the lights

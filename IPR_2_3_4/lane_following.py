@@ -71,7 +71,7 @@ def main():
         original_frame, resized_frame, validity = camera.fetch_frame()
 
         # Fetching distance reading from ultrasonic sensor
-        object_distance_cm = ultrasonic.get_ultrasonic_distance()
+        object_distance_cm = 100#ultrasonic.get_ultrasonic_distance()
 
         # Checks whether the capturing of the frame was successful. If not, exits the loop since the camera is not working.
         if validity is False:
@@ -110,7 +110,7 @@ def main():
             cv2.imshow('Green Light Mask', light_detection.green_mask)
 
         # Break the loop when 'ESC' key is pressed
-        key = cv2.waitKey(20)
+        key = cv2.waitKey(10)
 
         # Exit on ESC (27 is ASCII for ESC)
         if key == 27:
