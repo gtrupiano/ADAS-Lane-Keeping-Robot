@@ -52,7 +52,12 @@ def get_light_distance():
 
 ###############################################################################
 # Function Name: get_light_area
-# Description: 
+# Description: This is used to obtain the area of the detected light after averaging.
+#              The reason this is here is to allow for a simpler approach if the
+#              calibration parameters are incorrect. If this approach is needed,
+#              change the control logic to use the area value and threshold
+#              instead of hte distance value and threshold. Just not at the same
+#              time since they are similar.
 ###############################################################################
 
 def get_light_area():
@@ -68,7 +73,8 @@ def get_light_area():
 
 ###############################################################################
 # Function Name: light_area_to_distance
-# Description: 
+# Description: Converts detected light area to distance using interpolation 
+#              based on the calibration tables.
 ###############################################################################
 
 def light_area_to_distance(active_light, light_area):
@@ -121,9 +127,11 @@ def light_area_to_distance(active_light, light_area):
 
     return interpolated_distance
 
+
 ###############################################################################
-# Function Name: 
-# Description: 
+# Function Name: average_light_area
+# Description: Averages the area of the detected light over time using an 
+#              exponential moving average.
 ###############################################################################
 
 def average_light_area(active_light):
@@ -161,7 +169,8 @@ def average_light_area(active_light):
 
 ###############################################################################
 # Function Name: determine_active_light
-# Description: 
+# Description: Determines which light is currently active based on the 
+#              detected areas.
 ###############################################################################
 
 def determine_active_light():
@@ -225,8 +234,6 @@ def process_lights(frame):
     )
 
 
-
-
 ###############################################################################
 # Function Name: detect_light
 # Description: Processes the frame to look for input HSV ranges. Then locates
@@ -256,7 +263,6 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
 
         # Calculate area
         area = w * h
-
 
         # Draw the bounding box if the area is greater than the minimum
         if area >= light.light_area_min:
@@ -302,7 +308,7 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
 
     return mask, light_area
 
-            
+    
 ###############################################################################
 # Function Name: process_mask
 # Description: Obtains the mask based on the input HSV ranges. Applies erode 

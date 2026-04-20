@@ -36,7 +36,7 @@ import modules.vision.light_detection_config as light_detection_config
 #              and sends commands to the motor controller.
 ###############################################################################
 
-def determine_movement(left_lane, right_lane, object_distance_cm, active_light, light_area):
+def determine_movement(left_lane, right_lane, object_distance_cm, active_light, light_distance):
     # Stopping conditions:
 
     # If no lanes are detected, stop and wait for the next frame
@@ -59,9 +59,9 @@ def determine_movement(left_lane, right_lane, object_distance_cm, active_light, 
 
     # When both a light is detected and it's distance can be found,
     # modify the systems behavior based on the lights
-    if (active_light is not None) and (light_area is not None):
+    if (active_light is not None) and (light_distance is not None):
         if active_light == "red":
-            if light_area >= light_detection_config.LED_STOPPING_AREA:
+            if light_distance <= light_detection_config.LED_STOPPING_DISTANCE:
                 motor_control.stop_motors()
                 return
         elif active_light == "yellow":
