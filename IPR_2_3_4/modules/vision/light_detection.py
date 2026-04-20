@@ -41,17 +41,29 @@ running_average_green_area = None
 ###############################################################################
 
 def get_light_distance():
+    active_light, averaged_light_area = get_light_area()
+
+    light_distance = 0
+
+    light_distance = light_area_to_distance(active_light, averaged_light_area)
+
+    return active_light, light_distance
+
+
+###############################################################################
+# Function Name: get_light_area
+# Description: 
+###############################################################################
+
+def get_light_area():
     active_light = determine_active_light()
 
     if active_light is None:
         return None, None
 
-    light_distance = 0
-
     averaged_light_area = average_light_area(active_light)
-    light_distance = light_area_to_distance(active_light, averaged_light_area)
 
-    return active_light, light_distance
+    return active_light, averaged_light_area
 
 
 ###############################################################################

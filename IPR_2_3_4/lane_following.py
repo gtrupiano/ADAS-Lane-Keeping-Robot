@@ -71,7 +71,7 @@ def main():
         original_frame, resized_frame, validity = camera.fetch_frame()
 
         # Fetching distance reading from ultrasonic sensor
-        object_distance_cm = 100#ultrasonic.get_ultrasonic_distance()
+        object_distance_cm = ultrasonic.get_ultrasonic_distance()
 
         # Checks whether the capturing of the frame was successful. If not, exits the loop since the camera is not working.
         if validity is False:
@@ -80,17 +80,17 @@ def main():
         # Find light in frame and draw them on original frame.
         light_detection.process_lights(resized_frame)
 
-        # Obtains active light and it's current distance
-        active_light, light_distance = light_detection.get_light_distance()
+        # Obtains active light and its current area
+        active_light, light_area = light_detection.get_light_area()
 
-        if (active_light is None) or (light_distance is None):
+        if (active_light is None) or (light_area is None):
             print("No light detected")
 
         # Detecting lanes and drawing them on the original frame
         lanes_on_frame, left_lane, right_lane = vision.detect_lanes(resized_frame)
 
         # Determine movement based on the detected lanes and send commands to the motor controller
-        control.determine_movement(left_lane, right_lane, object_distance_cm, active_light, light_distance)
+        control.determine_movement(left_lane, right_lane, object_distance_cm, active_light, light_area)
 
         # Display frames based on whether debug mode is enabled or not
         if vision_config.SHOW_DEBUG_FRAMES:
