@@ -75,7 +75,7 @@ def fetch_frame():
     # Checks whether the capturing of the frame was successful. If not, returns None and False for validity since the camera is not working.
     if original_frame is None:
         print("Failed to capture frame")
-        return None, validity
+        return None, None, validity
 
     # Resize the original frame to the dimensions specified in vision_config for processing
     resized_frame = cv2.resize(

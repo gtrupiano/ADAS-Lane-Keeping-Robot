@@ -44,23 +44,10 @@ def main():
     global resized_frame
     global lanes_on_frame
 
-    # Initialization
-    ultrasonic.initialize_ultrasonic_sensor()
-    camera.configure_camera()
-    motor_control.setup_motor_controller()
+    initialize_peripherals()
     
     # Capturing input on whether user wants to calibrate the ROI points or not before starting the main loop for lane detection and movement control
-    roi_calibration_input = input("Calibrate ROI points (Yes / No)")
-    roi_calibration_input = roi_calibration_input.lower()
-
-    # Loop until valid input is received
-    while roi_calibration_input != "yes" and roi_calibration_input != "no":
-        roi_calibration_input = input("Invalid input. Calibrate ROI points (Yes / No)")
-        roi_calibration_input = roi_calibration_input.lower()
-
-    # Go into ROI calibration if user input is "yes".
-    if roi_calibration_input.lower() == "yes":
-        vision.calibrate_ROI_points()
+    roi_user_calibration()
 
 
     # Main loop for lane detection and movement control
@@ -117,6 +104,40 @@ def main():
             break
     
     shutdown_peripherals()
+
+###############################################################################
+# Function Name: initialize_peripherals
+# Description: Initializes all peripherals and sets up the system.
+###############################################################################
+
+def initialize_peripherals():
+    # Initializing ultrasonic sensor
+    ultrasonic.initialize_ultrasonic_sensor()
+
+    # Configuring the camera
+    camera.configure_camera()
+
+    # Setting up the motor controller
+    motor_control.setup_motor_controller()
+
+
+###############################################################################
+# Function Name: roi_user_calibration
+# Description: Determines the region of interest for calibration at startup.
+###############################################################################
+
+def roi_user_calibration():
+    roi_calibration_input = input("Calibrate ROI points (Yes / No)")
+    roi_calibration_input = roi_calibration_input.lower()
+
+    # Loop until valid input is received
+    while roi_calibration_input != "yes" and roi_calibration_input != "no":
+        roi_calibration_input = input("Invalid input. Calibrate ROI points (Yes / No)")
+        roi_calibration_input = roi_calibration_input.lower()
+
+    # Go into ROI calibration if user input is "yes".
+    if roi_calibration_input.lower() == "yes":
+        vision.calibrate_ROI_points()
 
 
 ###############################################################################

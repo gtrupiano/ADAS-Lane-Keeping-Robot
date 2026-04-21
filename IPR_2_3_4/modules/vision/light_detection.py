@@ -45,7 +45,7 @@ def get_light_distance():
 
     light_distance = 0
 
-    light_distance = light_area_to_distance(active_light, averaged_light_area)
+    light_distance = _light_area_to_distance(active_light, averaged_light_area)
 
     return active_light, light_distance
 
@@ -61,23 +61,23 @@ def get_light_distance():
 ###############################################################################
 
 def get_light_area():
-    active_light = determine_active_light()
+    active_light = _determine_active_light()
 
     if active_light is None:
         return None, None
 
-    averaged_light_area = average_light_area(active_light)
+    averaged_light_area = _average_light_area(active_light)
 
     return active_light, averaged_light_area
 
 
 ###############################################################################
 # Function Name: light_area_to_distance
-# Description: Converts detected light area to distance using interpolation 
-#              based on the calibration tables.
+# Description: Converts detected light area to distance using piecewise linear
+#              interpolation based on the calibration tables.
 ###############################################################################
 
-def light_area_to_distance(active_light, light_area):
+def _light_area_to_distance(active_light, light_area):
     interpolated_distance = 0
 
     cal_table = None
@@ -134,7 +134,7 @@ def light_area_to_distance(active_light, light_area):
 #              exponential moving average.
 ###############################################################################
 
-def average_light_area(active_light):
+def _average_light_area(active_light):
     global running_average_red_area
     global running_average_yellow_area
     global running_average_green_area
@@ -173,7 +173,7 @@ def average_light_area(active_light):
 #              detected areas.
 ###############################################################################
 
-def determine_active_light():
+def _determine_active_light():
     active_light = ""
 
     #  Red light is active
@@ -217,17 +217,17 @@ def process_lights(frame):
     )
 
     # Finds all lights in the frame and draws bounding boxes with proper text in the frame
-    red_mask, red_area = detect_light(
+    red_mask, red_area = _detect_light(
         frame,
         hsv_frame,
         light_detection_config.RED_LIGHT
     )
-    yellow_mask, yellow_area = detect_light(
+    yellow_mask, yellow_area = _detect_light(
         frame,
         hsv_frame,
         light_detection_config.YELLOW_LIGHT
     )
-    green_mask, green_area = detect_light(
+    green_mask, green_area = _detect_light(
         frame,
         hsv_frame,
         light_detection_config.GREEN_LIGHT
@@ -241,9 +241,9 @@ def process_lights(frame):
 #              bounding boxes and adding text based on the color.
 # ###############################################################################
 
-def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
+def _detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
     # Obtains the mask based on the input HSV ranges. Applies erode and dilate morphology to allow for a cleaner binary image.
-    mask = process_mask(
+    mask = _process_mask(
         hsv_frame,
         light.hsv_range
     )
@@ -315,7 +315,7 @@ def detect_light(original_frame, hsv_frame, light:light_detection_config.Light):
 #              and dilate morphology to allow for a cleaner binary image.
 ###############################################################################
 
-def process_mask(hsv_frame, hsv_range: light_detection_config.ColorHSVRange):
+def _process_mask(hsv_frame, hsv_range: light_detection_config.ColorHSVRange):
     # Create frame that are bitwise images that only contain light pixels if the color within the expected range is present
     mask = cv2.inRange(
         src=hsv_frame,

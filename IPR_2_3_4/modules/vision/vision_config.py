@@ -30,7 +30,7 @@ Y2 = 196
 
 # Resolution that the image will be resized to for processing (to speed up processing)
 PROCESSING_WIDTH = 640
-PROCESSING_HEIGHT = 360
+PROCESSING_HEIGHT = 480
 
 # Filtering parameters
 # Gaussian blur parameters
