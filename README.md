@@ -14,7 +14,7 @@ Visual data is obtained from the camera and processed to detect lanes and traffi
 The results show the ability of the system to make real-time decisions by integrating multiple sensor inputs and processing stages. This demonstrates a simplified yet effective approach to ADAS implementation while highlighting concepts such as sensor fusion, real-time processing, and modular system design without relying on more advanced control methods such as PID.
 
 [Here](https://youtu.be/Yv7g_DVL-VA) is the demo video for this project.
-It is also present in the repository [here](./Documentation/Comprehensive_IPR_Demo_Video.mp4)
+It is also present in the repository [here](./Documentation/Comprehensive_IPR_Demo_Video.mp4).
 
 ---
 <br>
