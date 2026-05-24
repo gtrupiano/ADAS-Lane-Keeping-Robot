@@ -12,9 +12,12 @@ This project is about understanding, designing, and implementing a simplified Ad
 Visual data is obtained from the camera and processed to detect lanes and traffic lights using image processing techniques such as grayscale conversion, edge detection, and HSV masking. Distance measurements are obtained from the ultrasonic sensor and filtered using an exponential moving average (EMA) to reduce the effect of noisy readings. That filtered data, along with detected lane positions and traffic light states, is used within a priority-based control system to determine how the robotic car should move. The system adjusts motor behavior based on object distance, traffic light conditions, and lane position using predefined thresholds and proportional logic.
 
 The results show the ability of the system to make real-time decisions by integrating multiple sensor inputs and processing stages. This demonstrates a simplified yet effective approach to ADAS implementation while highlighting concepts such as sensor fusion, real-time processing, and modular system design without relying on more advanced control methods such as PID.
+<br></br>
 
-[Here](https://youtu.be/Yv7g_DVL-VA) is the demo video for this project.
-It is also present in the repository [here](./Documentation/Comprehensive_IPR_Demo_Video.mp4).
+## Project Artifacts
+- [**Project Demo**](https://youtu.be/Yv7g_DVL-VA)
+  - The demo is also available in the repository [here](./Documentation/Comprehensive_IPR_Demo_Video.mp4).
+- [**Project Report**](./Documentation/ECE_6520_Term_Project_Report.pdf)
 
 ---
 <br>
@@ -40,7 +43,7 @@ This diagram describes how the different components interact with each other.
 ---
 
 ## Code Explaination
-This is just an overview of the program logic for all of the modules and features present within the system architecture. A more detailed explaination of each function is present within the project report which can be found [here](./Documentation/ECE_6520_Term_Project.pdf)
+This is just an overview of the program logic for all of the modules and features present within the system architecture. A more detailed explaination of each function is present within the project report which can be found [here](./Documentation/ECE_6520_Term_Project_Report.pdf)
 
 
 ### Application Logic
