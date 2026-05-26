@@ -43,7 +43,7 @@ This diagram describes how the different components interact with each other.
 ---
 
 ## Code Explaination
-This is just an overview of the program logic for all of the modules and features present within the system architecture. A more detailed explaination of each function is present within the project report which can be found [here](./Documentation/ECE_6520_Term_Project_Report.pdf)
+This is just an overview of the program logic for all of the modules and features present within the system architecture. A more detailed explaination of each function is present within the project report which can be found [here](./Documentation/ECE_6520_Term_Project_Report.pdf).
 
 
 ### Application Logic
@@ -63,3 +63,10 @@ This project successfully implements a simplified Advanced Driver Assistance Sys
 The system uses techniques such as exponential moving average (EMA) filtering for both distance measurements and visual data smoothing, HSV-based color detection for traffic lights, and interpolation for estimating distance based on detected light area. The control logic is implemented using a priority-based approach where object detection, traffic light response, and lane keeping are handled in sequence. This allows the system to respond appropriately to different conditions such as stopping at red lights, slowing for yellow lights, and maintaining position within detected lanes.
 
 While the system performs effectively in a controlled environment, there are limitations when considering real-world applications. These include sensitivity to lighting conditions, reliance on fixed HSV thresholds, and assumptions made in lane detection and distance estimation. Additionally, the lack of more advanced control methods such as PID or sensor fusion limits robustness in dynamic environments. Despite these limitations, the project demonstrates key concepts such as modular system design, real-time processing, sensor integration, and decision-based control logic, which are all fundamental to modern ADAS implementations.
+<br><br>
+
+## References
+- [Raspberry Pi 5 Documentation](https://www.raspberrypi.com/documentation/)
+- [Library Documentation for gpiozero](https://gpiozero.readthedocs.io/en/stable/)
+- [OpenCV Documentation](https://docs.opencv.org/4.x/)
+- [FreeNove FNK00043 Documentation](https://docs.freenove.com/projects/fnk0043/en/latest/index.html)
